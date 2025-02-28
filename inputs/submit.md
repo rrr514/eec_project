@@ -128,4 +128,62 @@ task class:
        Seed: 567890
 }
 
+# Have a machine that penalizes being in intermediate S,P,C states -> prefers being either on or off. Give machine tasks very infreqeuntly that need to be completed fast. Testing tradeoff between energy consumption and SLA violation
+machine class:
+{
+        Number of machines: 16
+        CPU type: RISCV
+        Number of cores: 4
+        Memory: 16384
+        S-States: [500, 500, 500, 500, 500, 500, 0]
+        P-States: [50, 50, 50, 0]
+        C-States: [50, 50, 50, 0]
+        MIPS: [1500, 200, 100, 0]
+        GPUs: no
+}
+task class:
+{
+        Start time: 0
+        End time : 10000000
+        Inter arrival: 500000
+        Expected runtime: 1000
+        Memory: 8
+        VM type: LINUX
+        GPU enabled: no
+        SLA type: SLA0
+        CPU type: RISCV
+        Task type: WEB
+        Seed: 514
+}
+
+# Spikes in workload
+task class:
+{
+        Start time: 750000
+        End time : 800000
+        Inter arrival: 100
+        Expected runtime: 10000
+        Memory: 32
+        VM type: LINUX
+        GPU enabled: yes
+        SLA type: SLA1
+        CPU type: X86
+        Task type: AI
+        Seed: 514
+}
+task class:
+{
+        Start time: 750000
+        End time : 800000
+        Inter arrival: 100
+        Expected runtime: 10000
+        Memory: 32
+        VM type: LINUX
+        GPU enabled: yes
+        SLA type: SLA1
+        CPU type: ARM
+        Task type: AI
+        Seed: 514
+}
+
 
