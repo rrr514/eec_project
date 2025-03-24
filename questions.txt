@@ -1,0 +1,26 @@
+-When is Scheduler.init() called?
+	-As far as I can tell, this is the only place to create new machines
+	-As such, is it called whenever the .md file has a machine class?
+		-These can be placed through the file though, so is it called continuously or does the cloud bunch these machine classes together?
+	-Spec says it is called after simulator reads entirety of input, so it looks like after all machine classes
+		-How does init know how many machines to establish?
+-Need to keep track of:
+	-Memory Usage
+		-Overcommitting tasks to a machine with not enough memory will slow down performance immensly
+	-CPU Usage
+	-CPU States
+		-Powering down takes less time than powering up
+		-Going from S5 to S0 may take whole minutes (extremely slow)
+
+
+Resources for Possible Algos:
+-Greedy
+-pMapper
+-E-Eco
+Literature Algo:
+-https://sre.google/sre-book/load-balancing-datacenter/ (Weighted Round Robin)
+-https://energyinformatics.springeropen.com/articles/10.1186/s42162-024-00370-y (Imitation-Based Optimization)
+
+IEEE Papers (Can't access Maybe):
+-https://ieeexplore.ieee.org/document/7445250
+-https://ieeexplore.ieee.org/document/7581436
