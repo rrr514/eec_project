@@ -23,6 +23,7 @@ namespace {
         double utilization;
         vector<TaskId_t> tasks;
 		vector<VMId_t> vms; // Track VMs on this machine
+		map<VMId_t, vector<TaskId_t>> vm_tasks; // Track tasks on each VM
     };
 
     // Global state for scheduler implementation
@@ -35,6 +36,15 @@ namespace {
 			// Compare by utilization
 			if (machine_status[a].utilization != machine_status[b].utilization)
 				return machine_status[a].utilization > machine_status[b].utilization;
+
+			// Check if either has a gpu while the other doesn't
+			if (Machine_GetInfo(a).gpus != Machine_GetInfo(b).gpus)
+				return Machine_GetInfo(a).gpus > Machine_GetInfo(b).gpus;
+
+			// Otherwise, sort by memory used by each machine
+			if (Machine_GetInfo(a).memory_used != Machine_GetInfo(b).memory_used)
+				return Machine_GetInfo(a).memory_used > Machine_GetInfo(b).memory_used;
+			
 			// Tie-breaker by ID for consistent ordering
 			return a < b;
 		}
@@ -42,6 +52,10 @@ namespace {
 	set<MachineId_t, MachineUtilizationComparator> active_machines_set; // For sorted access
 	set<MachineId_t, MachineUtilizationComparator> inactive_machines_set; // For sorted access
 }
+
+// TODO: Helper functions
+	// Moving tasks between machines
+		// Specifically, going from a machine to more efficient machine
 
 void Scheduler::Init() {
     SimOutput("Scheduler::Init(): Total number of machines is " + to_string(Machine_GetTotal()), 3);
@@ -52,7 +66,7 @@ void Scheduler::Init() {
         machines.push_back(MachineId_t(i));
         
         // Initialize tracking structures for each machine
-        machine_status[MachineId_t(i)] = {0.0, vector<TaskId_t>(), vector<VMId_t>()}; // No tasks or VMs yet
+        machine_status[MachineId_t(i)] = {0.0, vector<TaskId_t>(), vector<VMId_t>(), map<VMId_t, vector<TaskId_t>>()};
 
 		// Set initial state of machine to inactive and add to inactive machines
 		// inactive_machines.push_back(MachineId_t(i));
@@ -86,46 +100,45 @@ double calculateTaskUtilization(TaskId_t task_id, MachineId_t machine_id) {
     return taskInstructionsPerSec / machineInstructionsPerSec;
 }
 
-void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
-    // Get the task parameters
-    //  IsGPUCapable(task_id);
-    //  GetMemory(task_id);
-    //  RequiredVMType(task_id);
-    //  RequiredSLA(task_id);
-    //  RequiredCPUType(task_id);
-    // Decide to attach the task to an existing VM, 
-    //      vm.AddTask(taskid, Priority_T priority); or
-    // Create a new VM, attach the VM to a machine
-    //      VM vm(type of the VM)
-    //      vm.Attach(machine_id);
-    //      vm.AddTask(taskid, Priority_t priority) or
-    // Turn on a machine, create a new VM, attach it to the VM, then add the task
-    //
-    // Turn on a machine, migrate an existing VM from a loaded machine....
-    //
-    // Other possibilities as desired
-    // Priority_t priority = (task_id == 0 || task_id == 64)? HIGH_PRIORITY : MID_PRIORITY;
-    // if(migrating) {
-    //     VM_AddTask(vms[0], task_id, priority);
-    // }
-    // else {
-    //     VM_AddTask(vms[task_id % active_machines], task_id, priority);
-    // }// Skeleton code, you need to change it according to your algorithm
-
-	// Get task parameters
-	while (migrating) {
-		SimOutput("WARNING: Migration in progress, task " + to_string(task_id) + " will be queued", 0);
-		// Don't schedule new tasks during migration
+bool powerDownActiveMachine(MachineId_t machine_id) {
+	// Power down the machine if it has no tasks
+	if (machine_status[machine_id].tasks.empty()) {
+		// SimOutput("Scheduler::powerDownActiveMachine(): Powering down machine " + to_string(machine_id), 0);
+		Machine_SetState(machine_id, S5); // Power down
+		active_machines_set.erase(machine_id); // Remove from active machines
+		inactive_machines_set.insert(machine_id); // Move to inactive machines
+		return true;
 	}
-	// TaskInfo_t task_info = GetTaskInfo(task_id);
+	return false;
+}
+
+bool addTaskToMachineChecks(TaskId_t task_id, MachineId_t machine_id) {
+	// 1. Find whether machine can support task
+	MachineInfo_t info = Machine_GetInfo(machine_id);
+	CPUType_t required_cpu = RequiredCPUType(task_id);
+	unsigned memory = GetTaskMemory(task_id);
+
+	if(info.cpu != required_cpu) return false;
+	if(info.memory_used + memory > info.memory_size) return false;
+	double new_utilization = machine_status[machine_id].utilization + calculateTaskUtilization(task_id, machine_id);
+	if (new_utilization > 1.0) return false;
+
+	return true;
+}
+
+// Assumes task isn't on any other machine + needs a vm to run it
+bool addTaskToMachine(TaskId_t task_id, MachineId_t machine_id, bool activeMachine) {
+	// 1. Find whether machine can support task
+	if (!addTaskToMachineChecks(task_id, machine_id)) return false;
+
+	// TODO: Add functionality to ensure we get tasks that need GPUs to GPU machines
+
+	if (!activeMachine) Machine_SetState(machine_id, S0); // Power on the machine if it's inactive
+
 	CPUType_t required_cpu = RequiredCPUType(task_id);
 	VMType_t required_vm = RequiredVMType(task_id);
-	// bool needs_gpu = IsTaskGPUCapable(task_id); //TODO: Check GPU capability
-	unsigned memory = GetTaskMemory(task_id);
-	
-	// Calculate task load factor with a more conservative estimate
-	// double task_load = double(task_info.total_instructions) / 10000000.0;
-	
+	double new_utilization = machine_status[machine_id].utilization + calculateTaskUtilization(task_id, machine_id);
+
 	// Set priority based on SLA
 	Priority_t priority;
 	switch(RequiredSLA(task_id)) {
@@ -134,112 +147,129 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 		default:   priority = LOW_PRIORITY;
 	}
 
-	// Try to find an active machine first (for faster allocation)
-	// for(MachineId_t machine_id : active_machines) {
-	for (MachineId_t machine_id : active_machines_set) {
-		// SimOutput("Checking active machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
-		MachineInfo_t info = Machine_GetInfo(machine_id);
-		
-		// Skip machines that don't match requirements
-		if(info.cpu != required_cpu) continue;
-		// if(needs_gpu && !info.gpus) continue;
-		if(info.memory_used + memory > info.memory_size) continue;
-		// if(machine_status[machine_id].utilization >= 1.0) continue; // Skip overloaded machines
-		// SimOutput("Machine " + to_string(machine_id) + " is not overloaded", 0);
-
-		double new_utilization = machine_status[machine_id].utilization + calculateTaskUtilization(task_id, machine_id);
-
-		if (new_utilization > 1.0) {
-			// // If the new utilization exceeds 1.0, skip this machine
-			// SimOutput("WARNING: Machine " + to_string(machine_id) + " would exceed capacity with task " + to_string(task_id) + " at utilization of " + to_string(new_utilization), 0);
-			continue;
-		}
-
-		// SimOutput("Scheduling task " + to_string(task_id) + " on machine " + to_string(machine_id) + " with utilization " + to_string(new_utilization), 0);
-
-		// First, check if the machine has an active VM that is compatible
-		VMId_t vm_to_use = VMId_t(-1);
-		bool vm_found = false;
+	// Now, find what, if any, VM can run this task
+	bool vm_found = false;
+	VMId_t vm_to_use;
+	if (activeMachine) {
+		// Check if the machine has an active VM that is compatible
 		for (VMId_t vm_id : machine_status[machine_id].vms) {
 			VMInfo_t vm_info = VM_GetInfo(vm_id);
 			if (vm_info.vm_type == required_vm && vm_info.cpu == required_cpu) {
-				// Found a compatible VM, add task to it
-				// SimOutput("Found compatible VM " + to_string(vm_id) + " on machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
 				vm_to_use = vm_id;
 				vm_found = true;
 				break;
 			}
 		}
+	}
+	if (!vm_found) {
 		// If we didn't find a compatible VM, create a new one
-		if (!vm_found) {
-			vm_to_use = VM_Create(required_vm, required_cpu);
-			VM_Attach(vm_to_use, machine_id);
-			machine_status[machine_id].vms.push_back(vm_to_use); // Track the VM used
-		}
-		// Now we can safely add the task to the VM
+		vm_to_use = VM_Create(required_vm, required_cpu);
+		machine_status[machine_id].vms.push_back(vm_to_use);
+		VM_Attach(vm_to_use, machine_id);
+	}
+	// Now, add task to VM and VM to machine
+	VM_AddTask(vm_to_use, task_id, priority);
+	machine_status[machine_id].vm_tasks[vm_to_use].push_back(task_id);
 
-		// Add the task to the VM
-		VM_AddTask(vm_to_use, task_id, priority);
+	// Update machine status accordingly
+	machine_status[machine_id].utilization = new_utilization;
+	machine_status[machine_id].tasks.push_back(task_id);
+	task_locations[task_id] = {vm_to_use, machine_id};
+	if (!activeMachine) inactive_machines_set.erase(machine_id);
+	active_machines_set.insert(machine_id);
+
+	return true;
+}
+
+bool removeTaskOverheadFromMachine(TaskId_t task_id, bool manuallyRemoveTask = false) {
+	// Update the overhead for the task
+	auto it = task_locations.find(task_id);
+	if (it != task_locations.end()) {
+		VMId_t vm_id = it->second.first;
+		MachineId_t machine_id = it->second.second;
+
+		// Remove the task location entry
+		task_locations.erase(it);
+		
 		// Update machine status
-		machine_status[machine_id].utilization = new_utilization;
-		machine_status[machine_id].tasks.push_back(task_id);
-		task_locations[task_id] = {vm_to_use, machine_id}; // Track task location
-		active_machines_set.insert(machine_id); // Resort based on new utilization
-		return; // Task successfully scheduled
+		machine_status[machine_id].tasks.erase(std::remove(machine_status[machine_id].tasks.begin(), 
+														   machine_status[machine_id].tasks.end(), 
+														   task_id), 
+												machine_status[machine_id].tasks.end());
+		
+		// Update machine utilization
+		machine_status[machine_id].utilization -= calculateTaskUtilization(task_id, machine_id);
+		// Ensure utilization does not go negative
+		if (machine_status[machine_id].utilization < 0.0) {
+			machine_status[machine_id].utilization = 0.0; // Prevent negative utilization
+		}
+
+		// Update VM status
+		if (manuallyRemoveTask) VM_RemoveTask(vm_id, task_id);
+		auto& vm_tasks = machine_status[machine_id].vm_tasks[vm_id];
+		vm_tasks.erase(std::remove(vm_tasks.begin(), vm_tasks.end(), task_id), vm_tasks.end());
+
+		// Remove the VM if it has no tasks left
+		if (machine_status[machine_id].vm_tasks[vm_id].empty()) {
+			VM_Shutdown(vm_id);
+			machine_status[machine_id].vms.erase(std::remove(machine_status[machine_id].vms.begin(), 
+															machine_status[machine_id].vms.end(), 
+															vm_id), 
+												machine_status[machine_id].vms.end());
+		}
+		
+		// Power down if the machine has no tasks left
+		if (!powerDownActiveMachine(machine_id)) {
+			active_machines_set.insert(machine_id); // Ensure machine is marked as active
+		}
+		return true;
+	}
+	else {
+		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+		return false;
+	}
+}
+
+void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
+	// Get task parameters
+	while (migrating) {
+		SimOutput("WARNING: Migration in progress, task " + to_string(task_id) + " will be queued", 0);
+		// Don't schedule new tasks during migration
+	}
+
+	// Try to find an active machine first (for faster allocation)
+	for (MachineId_t machine_id : active_machines_set) {
+		// SimOutput("Checking active machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
+		if (addTaskToMachine(task_id, machine_id, true)) return;
 	}
 
 	// If no active machine is found, consider turning on a new machine
-	// for (MachineId_t machine_id : inactive_machines) {
 	for (MachineId_t machine_id : inactive_machines_set) {
-		MachineInfo_t info = Machine_GetInfo(machine_id);
-		
-		// Check if the machine can support the task
-		if(info.cpu != required_cpu) continue;
-		if(info.memory_used + memory > info.memory_size) continue;
-
-		// SimOutput("Powering on inactive machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
-		
-		// Power on the machine and set its state to active
-		Machine_SetState(machine_id, S0);
-		
-		// Create a new VM and add the task to it
-		VMId_t vm_id = VM_Create(required_vm, required_cpu);
-		VM_Attach(vm_id, machine_id);
-		VM_AddTask(vm_id, task_id, priority);
-		
-		machine_status[machine_id].vms.push_back(vm_id); // Track the VM used
-		machine_status[machine_id].utilization = calculateTaskUtilization(task_id, machine_id); // Set initial utilization
-		machine_status[machine_id].tasks.push_back(task_id); // Track task on this machine
-		task_locations[task_id] = {vm_id, machine_id}; // Track task location
-
-		inactive_machines_set.erase(machine_id); // Remove from inactive machines
-		active_machines_set.insert(machine_id); // Mark as active
-
-		return; // Task successfully scheduled
+		// SimOutput("Checking inactive machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
+		if (addTaskToMachine(task_id, machine_id, false)) return;
 	}
 
 	// If we reach here, no suitable machine was found for the task
 	SimOutput("WARNING: Could not allocate task " + to_string(task_id), 0);
 }
 
-// TODO: Check for SLA Violations here
 void Scheduler::PeriodicCheck(Time_t now) {
-    // for(MachineId_t machine_id : active_machines_set) {
-    //     MachineStatus& status = machine_status[machine_id];
+    for(MachineId_t machine_id : active_machines_set) {
+        // MachineStatus& status = machine_status[machine_id];
         
-    //     // Power management
-    //     if(status.tasks.empty()) {
-	// 		SimOutput("Scheduler::PeriodicCheck(): No tasks on machine " + to_string(machine_id) + ", powering down", 0);
-    //         Machine_SetState(machine_id, S5); // Power down if no tasks are running
-	// 		active_machines_set.erase(machine_id); // Remove from active machines
-	// 		inactive_machines_set.insert(machine_id); // Move to inactive machines
-    //         continue;
-    //     }
+        // Power management
+        if (powerDownActiveMachine(machine_id)) {
+			continue; // Skip to next machine if powered down
+		}
 		
-	// 	// TODO: Check for SLA violations and adjust performance if needed
-    // }
-	SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
-	return;
+		for (TaskId_t task_id : machine_status[machine_id].tasks) {
+			if (IsSLAViolation(task_id)) {
+				SimOutput("WARNING: SLA violation detected for task " + to_string(task_id), 0);
+				SLAWarning(now, task_id);
+			}
+		}
+    }
+	SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 3);
 }
 
 void Scheduler::Shutdown(Time_t time) {
@@ -261,7 +291,59 @@ void Scheduler::Shutdown(Time_t time) {
     SimOutput("SimulationComplete(): Time is " + to_string(time), 4);
 }
 
-// TODO: On workload completion, migrate other VMs into this machine to maximize utilization
+bool migrateTaskToNewMachine(TaskId_t task_id, MachineId_t source_machine, bool goForHigherUtilization) {
+	// Go through active machines and find one with higher utilization
+		// Since active machines is set sorted by utilization, just stop once we get to source_machine/find a better machine to transfer this task to
+	for (MachineId_t machine_id : active_machines_set) {
+		if (machine_id == source_machine) {
+			if (goForHigherUtilization) break; // Skip the source machine if we're not looking for higher utilization
+			else continue; // Skip the source machine
+		}
+
+		if (addTaskToMachineChecks(task_id, machine_id)) {
+			removeTaskOverheadFromMachine(task_id, true); // Remove task from source machine
+			addTaskToMachine(task_id, machine_id, true); // Add task to target machine
+			return true;
+		}
+		// If we reach here, the machine cannot handle the task, so continue to the next one
+	}
+	return false;
+}
+
+// Add this function after TaskComplete to consolidate machines
+void consolidateMachines() {
+    // Skip if migration is already in progress
+    if (migrating) return;
+    
+    // Create a vector of active machines sorted by utilization (ascending)
+    vector<MachineId_t> sortedMachines(active_machines_set.begin(), active_machines_set.end());
+    sort(sortedMachines.begin(), sortedMachines.end(), 
+        [](const MachineId_t& a, const MachineId_t& b) {
+            return machine_status[a].utilization < machine_status[b].utilization;
+        });
+    
+    // For each low utilization machine, try to migrate tasks to higher utilization machines
+    for (size_t i = 0; i < sortedMachines.size(); i++) {
+        MachineId_t source_machine = sortedMachines[i];
+        
+        // Skip if machine is already empty
+		MachineInfo_t info = Machine_GetInfo(source_machine);
+        if (info.s_state == S5 || machine_status[source_machine].tasks.empty()) {
+			SimOutput("Somehow have an empty/inactive machine in active machines set", 0);
+            continue;
+        }
+        
+        // Try to migrate as many tasks as possible from this machine
+        vector<TaskId_t> tasks_to_migrate = machine_status[source_machine].tasks;
+        
+        for (TaskId_t task_id : tasks_to_migrate) {
+            migrateTaskToNewMachine(task_id, source_machine, true);
+        }
+        
+        powerDownActiveMachine(source_machine); // Power down the machine if it's empty
+    }
+}
+
 void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // Do any bookkeeping necessary for the data structures
     // Decide if a machine is to be turned off, slowed down, or VMs to be migrated according to your policy
@@ -269,63 +351,15 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     
 	// SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
 
-	// Update the overhead for the task
-	auto it = task_locations.find(task_id);
-	if (it != task_locations.end()) {
-		VMId_t vm_id = it->second.first;
-		MachineId_t machine_id = it->second.second;
-		
-		// Update machine status
-		machine_status[machine_id].tasks.erase(std::remove(machine_status[machine_id].tasks.begin(), 
-														   machine_status[machine_id].tasks.end(), 
-														   task_id), 
-												machine_status[machine_id].tasks.end());
-		
-		// Update machine utilization
-		machine_status[machine_id].utilization -= calculateTaskUtilization(task_id, machine_id);
-		// Ensure utilization does not go negative
-		if (machine_status[machine_id].utilization < 0.0) {
-			machine_status[machine_id].utilization = 0.0; // Prevent negative utilization
-		}
+	// Assumption: Task is not attached to VM anymore
 
-		// Remove the VM if it has no tasks left
-		bool vm_empty = true;
-		for (TaskId_t t : machine_status[machine_id].tasks) {
-			if (task_locations[t].first == vm_id) {
-				vm_empty = false; // VM still has tasks
-				break;
-			}
-		}
-		if (vm_empty) {
-			VM_Shutdown(vm_id); // Shutdown the VM if no tasks are left
-			auto vm_it = std::find(machine_status[machine_id].vms.begin(), 
-									machine_status[machine_id].vms.end(), 
-									vm_id);
-			if (vm_it != machine_status[machine_id].vms.end()) {
-				machine_status[machine_id].vms.erase(vm_it); // Remove VM from tracking
-			}
-		}
-		
-		// Power down if the machine has no tasks left
-		if (machine_status[machine_id].tasks.empty()) {
-			Machine_SetState(machine_id, S5); // Power down if no tasks are running
-			active_machines_set.erase(machine_id); // Remove from active machines
-			inactive_machines_set.insert(machine_id); // Move to inactive machines
-		}
+	removeTaskOverheadFromMachine(task_id); // Takes care of all necessary updates to overhead
 
-		// Remove the task location entry
-		task_locations.erase(it);
-	}
-	else {
-		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
-	}
-
-	// TODO: Refactor all tasks to be migrated to as few machines as possible
-		// By pseudocode:
-		// Sort machines by utilization (ascending, not descending)
-		// For lower utilization, see if tasks can be migrated to higher utilization machines
-		// If so, migrate the task to that machine
-		// Update the task location in task_locations map
+	static int completed_tasks = 0;
+    completed_tasks++;
+    if (completed_tasks % 10 == 0) {
+        // consolidateMachines();
+    }
 }
 
 // Public interface below
@@ -351,8 +385,25 @@ void MemoryWarning(Time_t time, MachineId_t machine_id) {
     // The simulator is alerting you that machine identified by machine_id is overcommitted
     SimOutput("MemoryWarning(): Overflow at " + to_string(machine_id) + " was detected at time " + to_string(time), 0);
 
-	// TODO: Migrate the task to another machine
-	// VM_Migrate(VMId_t vm_id, MachineId_t machine_id);
+	// 1. Find the task with the greatest memory overhead
+	unsigned max_memory = 0;
+	TaskId_t max_task = 0;
+	for (TaskId_t task_id : machine_status[machine_id].tasks) {
+		unsigned task_memory = GetTaskMemory(task_id);
+		if (task_memory > max_memory) {
+			max_memory = task_memory;
+			max_task = task_id;
+		}
+	}
+	if (max_task == 0) {
+		SimOutput("WARNING: No tasks found on machine " + to_string(machine_id), 0);
+		return;
+	}
+
+	// 2. Migrate the task to another machine
+	if (!migrateTaskToNewMachine(max_task, machine_id, false)) {
+		SimOutput("WARNING: Could not migrate task " + to_string(max_task) + " from machine " + to_string(machine_id), 0);
+	}
 }
 
 void MigrationDone(Time_t time, VMId_t vm_id) {
@@ -366,12 +417,6 @@ void SchedulerCheck(Time_t time) {
     // This function is called periodically by the simulator, no specific event
     SimOutput("SchedulerCheck(): SchedulerCheck() called at " + to_string(time), 4);
     Scheduler.PeriodicCheck(time);
-    // static unsigned counts = 0;
-    // counts++;
-    // if(counts == 10) {
-    //     migrating = true;
-    //     VM_Migrate(1, 9);
-    // }
 }
 
 void SimulationComplete(Time_t time) {
@@ -388,8 +433,6 @@ void SimulationComplete(Time_t time) {
 }
 
 void SLAWarning(Time_t time, TaskId_t task_id) {
-    // TODO: Either bump up the performance of the current machine or migrate the task to another machine that is faster
-	// Machine_SetCorePerformance(MachineId_t machine_id, unsigned core_id, CPUPerformance_t p_state);
 
 
 	// Migrate this task into another machine
@@ -400,50 +443,31 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	// 4. Update the machine status for both the source and destination machines
 	// 5. Update the VM status if necessary
 
-	for (MachineId_t machine : active_machines_set) {
-		// Skip if task is already on this machine
-		if (task_locations[task_id].second == machine)
+	// VM_RemoveTask(task_locations[task_id].first, task_id); // Remove task from VM
+	// removeTaskOverheadFromMachine(task_id, true); // Remove task from current machine – definetely don't want
+
+	vector<MachineId_t> sortedMachines;
+	for (MachineId_t machine_id : active_machines_set) sortedMachines.push_back(machine_id);
+	sort(sortedMachines.begin(), sortedMachines.end(), 
+		[](const MachineId_t& a, const MachineId_t& b) {
+			return machine_status[a].utilization < machine_status[b].utilization;
+		});
+	
+	// For each low utilization machine, try to migrate tasks to higher utilization machines
+	for (size_t i = 0; i < sortedMachines.size(); i++) {
+		MachineId_t source_machine = sortedMachines[i];
+		
+		// Skip if machine is already empty
+		if (machine_status[source_machine].tasks.empty()) {
+			SimOutput("Somehow have an empty machine in active machines set", 0);
 			continue;
+		}
 
-		// Check if the machine can handle the task
-		MachineInfo_t info = Machine_GetInfo(machine);
-		if (info.cpu == RequiredCPUType(task_id) && info.memory_used + GetTaskMemory(task_id) <= info.memory_size) {
-			// Check if the machine can handle the task
-			VMId_t vm_id = task_locations[task_id].first;
-			if (vm_id != VMId_t(-1)) {
-				// Migrate the task to this machine
-				VM_Migrate(vm_id, machine);
-				
-				// Update original machine status – both machine status and task_locations
-				MachineId_t original_machine = task_locations[task_id].second;
-				machine_status[original_machine].tasks.erase(std::remove(machine_status[original_machine].tasks.begin(), 
-																		machine_status[original_machine].tasks.end(), 
-																		task_id), 
-																machine_status[original_machine].tasks.end());
-				TaskInfo_t task_info = GetTaskInfo(task_id);
-				double task_load = double(task_info.total_instructions) / 10000000.0;
-				double mips_factor = double(Machine_GetInfo(original_machine).performance[Machine_GetInfo(original_machine).p_state]) / 3000.0;
-				double effective_load = task_load / mips_factor;
-				machine_status[original_machine].utilization -= effective_load;
-				if (machine_status[original_machine].utilization < 0.0) {
-					machine_status[original_machine].utilization = 0.0; // Prevent negative utilization
-				}
-				// Add back into set
-				if (machine_status[original_machine].tasks.empty()) {
-					Machine_SetState(original_machine, S5); // Power down if no tasks are running
-					active_machines_set.erase(original_machine); // Remove from active machines
-					inactive_machines_set.insert(original_machine); // Move to inactive machines
-				}
-				else
-					active_machines_set.insert(original_machine); // Ensure machine is marked as active
-
-				// Update task location
-				task_locations[task_id] = {vm_id, machine}; // Update task location to new machine
-				machine_status[machine].tasks.push_back(task_id); // Track task on new machine
-				machine_status[machine].utilization += effective_load; // Update new machine utilization
-				active_machines_set.insert(machine); // Ensure new machine is marked as active
-				return; // Task successfully migrated
-			}
+		// Add this task into this machine
+		if (addTaskToMachineChecks(task_id, source_machine)) {
+			removeTaskOverheadFromMachine(task_id, true); // Remove task from source machine
+			addTaskToMachine(task_id, source_machine, true); // Add task to target machine
+			return;
 		}
 	}
 	// If the machine is not suitable, check for other machines

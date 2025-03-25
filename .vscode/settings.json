@@ -1,5 +1,15 @@
 {
 	"files.associations": {
-		"vector": "cpp"
+		"vector": "cpp",
+		"cstdint": "cpp",
+		"array": "cpp",
+		"deque": "cpp",
+		"list": "cpp",
+		"string": "cpp",
+		"unordered_map": "cpp",
+		"unordered_set": "cpp",
+		"string_view": "cpp",
+		"initializer_list": "cpp",
+		"ranges": "cpp"
 	}
 }
