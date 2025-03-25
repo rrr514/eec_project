@@ -9,6 +9,7 @@
 #define SimTypes_h
 
 #include <iostream>
+#include <cstdint>
 #include <vector>
 
 using namespace std;

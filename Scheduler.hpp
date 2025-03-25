@@ -26,6 +26,15 @@ private:
     vector<MachineId_t> machines;
 };
 
+struct MachineStatus {
+    MachineId_t id;
+    unsigned utilization;
+    vector<VMId_t> vms;
+};
+
+bool canRunTask(VMId_t vm, TaskId_t task_id);
+bool canAttachVM(MachineStatus machine);
+double calculateTaskUtilization(TaskId_t task_id, MachineId_t machine_id);
 
 
 #endif /* Scheduler_hpp */
