@@ -32,7 +32,7 @@ struct MachineStatus {
 };
 
 bool canRunTask(VMId_t vm, TaskId_t task_id);
-bool canAttachVM(MachineStatus machine);
+bool canAttachVM(MachineStatus* machine);
 void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType);
 
 
