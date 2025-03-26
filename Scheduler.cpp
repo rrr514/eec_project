@@ -53,11 +53,13 @@ namespace {
 	set<MachineId_t, MachineUtilizationComparator> inactive_machines_set; // For sorted access
 
 	vector<TaskId_t> tasks_to_do;
-}
 
-// TODO: Helper functions
-	// Moving tasks between machines
-		// Specifically, going from a machine to more efficient machine
+	typedef enum {
+		GO_HIGHER = 1,
+		GO_LOWER = 2,
+		DO_NOT_CARE = 3
+	} UtilizationPriority;
+}
 
 void Scheduler::Init() {
     SimOutput("Scheduler::Init(): Total number of machines is " + to_string(Machine_GetTotal()), 3);
@@ -315,13 +317,16 @@ void Scheduler::Shutdown(Time_t time) {
     SimOutput("SimulationComplete(): Time is " + to_string(time), 4);
 }
 
-bool migrateTaskToNewMachine(TaskId_t task_id, MachineId_t source_machine, bool goForHigherUtilization) {
+bool migrateTaskToNewMachine(TaskId_t task_id, MachineId_t source_machine, UtilizationPriority priority) {
 	// Go through active machines and find one with higher utilization
 		// Since active machines is set sorted by utilization, just stop once we get to source_machine/find a better machine to transfer this task to
 	for (MachineId_t machine_id : active_machines_set) {
 		if (machine_status[machine_id].changing_state) continue;
-		if (goForHigherUtilization && machine_status[machine_id].utilization <= machine_status[source_machine].utilization) {
+		if (priority == GO_HIGHER && machine_status[machine_id].utilization <= machine_status[source_machine].utilization) {
 			break; // Skip machines with lower utilization
+		}
+		else if (priority == GO_LOWER && machine_status[machine_id].utilization >= machine_status[source_machine].utilization) {
+			continue; // Skip machines with higher utilization
 		}
 		else if (machine_id == source_machine) continue;
 
@@ -386,7 +391,7 @@ void consolidateMachines() {
         vector<TaskId_t> tasks_to_migrate = machine_status[source_machine].tasks;
         
         for (TaskId_t task_id : tasks_to_migrate) {
-            migrateTaskToNewMachine(task_id, source_machine, true);
+            migrateTaskToNewMachine(task_id, source_machine, GO_HIGHER);
         }
 
 		// Migrate vms on machine to other machines
@@ -457,30 +462,29 @@ void HandleTaskCompletion(Time_t time, TaskId_t task_id) {
     Scheduler.TaskComplete(time, task_id);
 }
 
-//TODO: 
 void MemoryWarning(Time_t time, MachineId_t machine_id) {
     // The simulator is alerting you that machine identified by machine_id is overcommitted
     SimOutput("MemoryWarning(): Overflow at " + to_string(machine_id) + " was detected at time " + to_string(time), 0);
 
 	// // 1. Find the task with the greatest memory overhead
-	// unsigned max_memory = 0;
-	// TaskId_t max_task = 0;
-	// for (TaskId_t task_id : machine_status[machine_id].tasks) {
-	// 	unsigned task_memory = GetTaskMemory(task_id);
-	// 	if (task_memory > max_memory) {
-	// 		max_memory = task_memory;
-	// 		max_task = task_id;
-	// 	}
-	// }
-	// if (max_task == 0) {
-	// 	SimOutput("WARNING: No tasks found on machine " + to_string(machine_id), 0);
-	// 	return;
-	// }
+	unsigned max_memory = 0;
+	TaskId_t max_task = 0;
+	for (TaskId_t task_id : machine_status[machine_id].tasks) {
+		unsigned task_memory = GetTaskMemory(task_id);
+		if (task_memory > max_memory) {
+			max_memory = task_memory;
+			max_task = task_id;
+		}
+	}
+	if (max_task == 0) {
+		SimOutput("WARNING: No tasks found on machine " + to_string(machine_id), 0);
+		return;
+	}
 
-	// // 2. Migrate the task to another machine
-	// if (!migrateTaskToNewMachine(max_task, machine_id, false)) {
-	// 	SimOutput("WARNING: Could not migrate task " + to_string(max_task) + " from machine " + to_string(machine_id), 0);
-	// }
+	// 2. Migrate the task to another machine
+	if (!migrateTaskToNewMachine(max_task, machine_id, DO_NOT_CARE)) {
+		SimOutput("WARNING: Could not migrate task " + to_string(max_task) + " from machine " + to_string(machine_id), 0);
+	}
 }
 
 void MigrationDone(Time_t time, VMId_t vm_id) {
@@ -519,37 +523,12 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	// 5. Update the VM status if necessary
 
 	SimOutput("SLAWarning(): SLA violation detected for task " + to_string(task_id), 0);
-
-	// TODO: Migrate the entire VM this task resides in if possible
-
-	// vector<MachineId_t> sortedMachines;
-	// for (MachineId_t machine_id : active_machines_set) sortedMachines.push_back(machine_id);
-	// sort(sortedMachines.begin(), sortedMachines.end(), 
-	// 	[](const MachineId_t& a, const MachineId_t& b) {
-	// 		return machine_status[a].utilization < machine_status[b].utilization;
-	// 	});
-	// MachineId_t source_machine = task_locations[task_id].second;
-	// // SimOutput("SLAWarning(): Source machine is " + to_string(source_machine), 0);
+	// Basically, just do migrateTaskToNewMachine
+	if (!migrateTaskToNewMachine(task_id, task_locations[task_id].second, GO_LOWER)) {
+		// If we reach here, no suitable machine was found for the task
+		SimOutput("WARNING: Could not migrate task " + to_string(task_id), 0);
+	}
 	
-	// // For each low utilization machine, try to migrate tasks to higher utilization machines
-	// for (size_t i = 0; i < sortedMachines.size(); i++) {
-	// 	if (sortedMachines[i] == source_machine) break; // Going further than source machine means no suitable machine found
-	// 	MachineId_t target_machine = sortedMachines[i];
-		
-	// 	// Skip if machine is already empty
-	// 	if (machine_status[target_machine].tasks.empty()) {
-	// 		SimOutput("Somehow have an empty machine in active machines set", 0);
-	// 		continue;
-	// 	}
-
-	// 	// Add this task into this machine
-	// 	if (addTaskToMachineChecks(task_id, target_machine)) {
-	// 		removeTaskOverheadFromMachine(task_id, true); // Remove task from source machine
-	// 		addTaskToMachine(task_id, target_machine, true); // Add task to target machine
-	// 		powerDownActiveMachine(source_machine); // Power down the source machine if it's empty
-	// 		return;
-	// 	}
-	// }
 	// If the machine is not suitable, check for other machines
 	SimOutput("WARNING: No suitable machine found for SLA warning on task " + to_string(task_id), 0);
 }
