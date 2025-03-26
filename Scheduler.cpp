@@ -359,39 +359,44 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
         MachineStatus* le_machine = low_efficiency_machines[currLowEfficiencyMachine];
         MachineStatus* he_machine = high_efficiency_machines[currHighEfficiencyMachine];
 
-        // If possible, migrate VMs from low efficiency machine to high efficiency machine
+        // Migrate VMs from le_machine to he_machine (skip VMs that are already migrating)
+        bool foundValid = false;
         while(le_machine->vms.size() > 0 && he_machine->vms.size() < MAX_VM_PER_MACHINE) {
-            SimOutput("Low Efficiency Machine VM size: " + to_string(le_machine->vms.size()), 3);
-            SimOutput("High Efficiency Machine VM size: " + to_string(he_machine->vms.size()), 3);
-            // Print out VMs in each machine before migration
-            SimOutput("Low Efficiency Machine VMs: ", 3);
-            for(VMId_t vm: le_machine->vms){
-                SimOutput(to_string(vm), 3);
+            int idx = (int)le_machine->vms.size() - 1;
+            foundValid = false;
+            // Search for a VM that is not in the process of migrating.
+            while(idx >= 0) {
+                VMId_t candidate = le_machine->vms[idx];
+                if(!isVMMigrating[candidate]){
+                    foundValid = true;
+                    break;
+                }
+                idx--;
             }
-            SimOutput("High Efficiency Machine VMs: ", 3);
-            for(VMId_t vm: he_machine->vms){
-                SimOutput(to_string(vm), 3);
+            if(!foundValid) {
+                SimOutput("No more VMs available to migrate on this machine.", 3);
+                break;  // No more VMs available to migrate on this machine.
             }
 
-            VMId_t vmToMigrate = le_machine->vms.back();
-            if(isVMMigrating[vmToMigrate]){
-                SimOutput("Warning! Trying to migrate a VM that is already migrating!", 3);
-            }
-            le_machine->vms.pop_back();
+            VMId_t vmToMigrate = le_machine->vms[idx];
+            // Erase the VM from low efficiency machine.
+            le_machine->vms.erase(le_machine->vms.begin() + idx);
+
             isVMMigrating[vmToMigrate] = true;
-            SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " + to_string(le_machine->id) + " to machine " + to_string(he_machine->id), 3);
+            SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " +
+                      to_string(le_machine->id) + " to machine " + to_string(he_machine->id), 3);
             VM_Migrate(vmToMigrate, he_machine->id);
             he_machine->vms.push_back(vmToMigrate);
+
             SimOutput("Low Efficiency Machine VM size: " + to_string(le_machine->vms.size()), 3);
-            SimOutput("High Efficiency Machine VM size: " + to_string(he_machine->vms.size()), 3);
-            // Print out VMs in each machine before migration
-            SimOutput("Low Efficiency Machine VMs: ", 3);
+            // Print out the VMs in the low efficiency machine
             for(VMId_t vm: le_machine->vms){
-                SimOutput(to_string(vm), 3);
+                SimOutput("VM in low efficiency machine: " + to_string(vm), 3);
             }
-            SimOutput("High Efficiency Machine VMs: ", 3);
+            SimOutput("High Efficiency Machine VM size: " + to_string(he_machine->vms.size()), 3);
+            // Print out the VMs in the high efficiency machine
             for(VMId_t vm: he_machine->vms){
-                SimOutput(to_string(vm), 3);
+                SimOutput("VM in high efficiency machine: " + to_string(vm), 3);
             }
         }
 
@@ -399,7 +404,7 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
         high_efficiency_machines[currHighEfficiencyMachine] = he_machine;
         
         // If the low efficiency machine is empty, move to the next one
-        if(le_machine->vms.size() == 0) {
+        if(!foundValid) {
             currLowEfficiencyMachine--;
         }
     }
