@@ -1,0 +1,1309 @@
+Init(): About to read input file
+ReadMachineClass(): Reading machine descriptor
+ReadMachineClass(): Reading machine descriptor
+ReadTaskClass(): Reading task descriptor
+ReadTaskClass(): Task 0 with 1612931000 instructions added at 60069
+ReadTaskClass(): Task 1 with 2077833000 instructions added at 69120
+ReadTaskClass(): Task 2 with 1335087000 instructions added at 79245
+ReadTaskClass(): Task 3 with 2362083000 instructions added at 82088
+ReadTaskClass(): Task 4 with 2390273000 instructions added at 83315
+ReadTaskClass(): Task 5 with 2379123000 instructions added at 84264
+ReadTaskClass(): Task 6 with 2049974000 instructions added at 88073
+ReadTaskClass(): Task 7 with 1841467000 instructions added at 99188
+ReadTaskClass(): Task 8 with 1744800000 instructions added at 99476
+ReadTaskClass(): Task 9 with 2526937000 instructions added at 101672
+ReadTaskClass(): Task 10 with 1456327000 instructions added at 102193
+ReadTaskClass(): Task 11 with 1756224000 instructions added at 106546
+ReadTaskClass(): Task 12 with 1906202000 instructions added at 111277
+ReadTaskClass(): Task 13 with 1320191000 instructions added at 115053
+ReadTaskClass(): Task 14 with 2165897000 instructions added at 125954
+ReadTaskClass(): Task 15 with 1978209000 instructions added at 136933
+ReadTaskClass(): Task 16 with 1535812000 instructions added at 137729
+ReadTaskClass(): Task 17 with 2274949000 instructions added at 138408
+ReadTaskClass(): Task 18 with 2688063000 instructions added at 140873
+ReadTaskClass(): Task 19 with 1805523000 instructions added at 140987
+ReadTaskClass(): Task 20 with 2477481000 instructions added at 141723
+ReadTaskClass(): Task 21 with 1796519000 instructions added at 142064
+ReadTaskClass(): Task 22 with 2037832000 instructions added at 155864
+ReadTaskClass(): Task 23 with 2206913000 instructions added at 157795
+ReadTaskClass(): Task 24 with 2480108000 instructions added at 174562
+ReadTaskClass(): Task 25 with 2184442000 instructions added at 177975
+ReadTaskClass(): Task 26 with 1661965000 instructions added at 182665
+ReadTaskClass(): Task 27 with 2439423000 instructions added at 188025
+ReadTaskClass(): Task 28 with 2487505000 instructions added at 188288
+ReadTaskClass(): Task 29 with 2325851000 instructions added at 192012
+ReadTaskClass(): Task 30 with 2092238000 instructions added at 194858
+ReadTaskClass(): Task 31 with 2645023000 instructions added at 198781
+ReadTaskClass(): Task 32 with 2315695000 instructions added at 208772
+ReadTaskClass(): Task 33 with 2058900000 instructions added at 211306
+ReadTaskClass(): Task 34 with 1503278000 instructions added at 237050
+ReadTaskClass(): Task 35 with 2263703000 instructions added at 242618
+ReadTaskClass(): Task 36 with 1465473000 instructions added at 242692
+ReadTaskClass(): Task 37 with 2048223000 instructions added at 249108
+ReadTaskClass(): Task 38 with 1424570000 instructions added at 251445
+ReadTaskClass(): Task 39 with 1751126000 instructions added at 257630
+ReadTaskClass(): Task 40 with 2572494000 instructions added at 264998
+ReadTaskClass(): Task 41 with 1739485000 instructions added at 276602
+ReadTaskClass(): Task 42 with 1331059000 instructions added at 280241
+ReadTaskClass(): Task 43 with 2206594000 instructions added at 287547
+ReadTaskClass(): Task 44 with 1341180000 instructions added at 289611
+ReadTaskClass(): Task 45 with 2506353000 instructions added at 324718
+ReadTaskClass(): Task 46 with 2567432000 instructions added at 326180
+ReadTaskClass(): Task 47 with 2442093000 instructions added at 329823
+ReadTaskClass(): Task 48 with 1922877000 instructions added at 349292
+ReadTaskClass(): Task 49 with 1624151000 instructions added at 358151
+ReadTaskClass(): Task 50 with 1988715000 instructions added at 369395
+ReadTaskClass(): Task 51 with 2242433000 instructions added at 374405
+ReadTaskClass(): Task 52 with 2278812000 instructions added at 386350
+ReadTaskClass(): Task 53 with 2349878000 instructions added at 398400
+ReadTaskClass(): Task 54 with 1481434000 instructions added at 401481
+ReadTaskClass(): Task 55 with 1550439000 instructions added at 408570
+ReadTaskClass(): Task 56 with 2196092000 instructions added at 418450
+ReadTaskClass(): Task 57 with 2290757000 instructions added at 422817
+ReadTaskClass(): Task 58 with 2073512000 instructions added at 431331
+ReadTaskClass(): Task 59 with 1793994000 instructions added at 440607
+ReadTaskClass(): Task 60 with 1971158000 instructions added at 444306
+ReadTaskClass(): Task 61 with 1406205000 instructions added at 444543
+ReadTaskClass(): Task 62 with 2391034000 instructions added at 449541
+ReadTaskClass(): Task 63 with 2489481000 instructions added at 455177
+ReadTaskClass(): Task 64 with 2617439000 instructions added at 466490
+ReadTaskClass(): Task 65 with 2174758000 instructions added at 470995
+ReadTaskClass(): Task 66 with 2274021000 instructions added at 477476
+ReadTaskClass(): Task 67 with 2494541000 instructions added at 480787
+ReadTaskClass(): Task 68 with 1996627000 instructions added at 485720
+ReadTaskClass(): Task 69 with 1711812000 instructions added at 490153
+ReadTaskClass(): Task 70 with 2285373000 instructions added at 504943
+ReadTaskClass(): Task 71 with 1564153000 instructions added at 513975
+ReadTaskClass(): Task 72 with 2020752000 instructions added at 517327
+ReadTaskClass(): Task 73 with 1324841000 instructions added at 519144
+ReadTaskClass(): Task 74 with 1331803000 instructions added at 522681
+ReadTaskClass(): Task 75 with 2662077000 instructions added at 525217
+ReadTaskClass(): Task 76 with 1398902000 instructions added at 528184
+ReadTaskClass(): Task 77 with 1460404000 instructions added at 529448
+ReadTaskClass(): Task 78 with 2123364000 instructions added at 530728
+ReadTaskClass(): Task 79 with 2530862000 instructions added at 544520
+ReadTaskClass(): Task 80 with 2438138000 instructions added at 552882
+ReadTaskClass(): Task 81 with 2170321000 instructions added at 588940
+ReadTaskClass(): Task 82 with 2487432000 instructions added at 590546
+ReadTaskClass(): Task 83 with 2671037000 instructions added at 590992
+ReadTaskClass(): Task 84 with 1823164000 instructions added at 593709
+ReadTaskClass(): Task 85 with 2240510000 instructions added at 599436
+ReadTaskClass(): Task 86 with 2584148000 instructions added at 600511
+ReadTaskClass(): Task 87 with 2366952000 instructions added at 600617
+ReadTaskClass(): Task 88 with 2676315000 instructions added at 602943
+ReadTaskClass(): Task 89 with 2378839000 instructions added at 609640
+ReadTaskClass(): Task 90 with 1378842000 instructions added at 609644
+ReadTaskClass(): Task 91 with 1517094000 instructions added at 611886
+ReadTaskClass(): Task 92 with 1736682000 instructions added at 613217
+ReadTaskClass(): Task 93 with 2137797000 instructions added at 626893
+ReadTaskClass(): Task 94 with 2285876000 instructions added at 631621
+ReadTaskClass(): Task 95 with 2283058000 instructions added at 631670
+ReadTaskClass(): Task 96 with 2333928000 instructions added at 639273
+ReadTaskClass(): Task 97 with 1946834000 instructions added at 655961
+ReadTaskClass(): Task 98 with 1871692000 instructions added at 659328
+ReadTaskClass(): Task 99 with 2557317000 instructions added at 663427
+ReadTaskClass(): Task 100 with 1413307000 instructions added at 665828
+ReadTaskClass(): Task 101 with 2149504000 instructions added at 667343
+ReadTaskClass(): Task 102 with 1385104000 instructions added at 675523
+ReadTaskClass(): Task 103 with 2616871000 instructions added at 699769
+ReadTaskClass(): Task 104 with 2672620000 instructions added at 702865
+ReadTaskClass(): Task 105 with 2231385000 instructions added at 706711
+ReadTaskClass(): Task 106 with 1313277000 instructions added at 713161
+ReadTaskClass(): Task 107 with 1395661000 instructions added at 713797
+ReadTaskClass(): Task 108 with 2284847000 instructions added at 729204
+ReadTaskClass(): Task 109 with 2452722000 instructions added at 732290
+ReadTaskClass(): Task 110 with 2583693000 instructions added at 733684
+ReadTaskClass(): Task 111 with 1828119000 instructions added at 734616
+ReadTaskClass(): Task 112 with 2507858000 instructions added at 737771
+ReadTaskClass(): Task 113 with 1421058000 instructions added at 738497
+ReadTaskClass(): Task 114 with 2688072000 instructions added at 744915
+ReadTaskClass(): Task 115 with 2199672000 instructions added at 745147
+ReadTaskClass(): Task 116 with 2398478000 instructions added at 749609
+ReadTaskClass(): Task 117 with 1685946000 instructions added at 749701
+ReadTaskClass(): Task 118 with 1349315000 instructions added at 776182
+ReadTaskClass(): Task 119 with 2350384000 instructions added at 781813
+ReadTaskClass(): Task 120 with 2121122000 instructions added at 783022
+ReadTaskClass(): Task 121 with 1743178000 instructions added at 783730
+ReadTaskClass(): Task 122 with 2546150000 instructions added at 784401
+ReadTaskClass(): Task 123 with 2178648000 instructions added at 785043
+ReadTaskClass(): Task 124 with 2108732000 instructions added at 788549
+ReadTaskClass(): Task 125 with 2399642000 instructions added at 794402
+ReadTaskClass(): Task 126 with 2033865000 instructions added at 796563
+ReadTaskClass(): Task 127 with 2410629000 instructions added at 802005
+Init(): Found 128 tasks
+Init(): Found 40 machines
+Init(): About to initialize scheduler
+Scheduler::Init(): Total number of machines is 40
+Scheduler::Init(): Total number of active machines is 40
+Scheduler::Init(): Initializing scheduler
+Init(): Starting simulation
+Simulate(): There are 129 events in the simulator
+Attached VM 0 to machine 0 at 60069
+Attached VM of type 0 to machine of type 3
+Added task 0 to VM 0 at 60069
+VM utilization: 1
+Task in VM: 0
+Machine utilization: 1
+Attached VM 1 to machine 1 at 69120
+Attached VM of type 0 to machine of type 3
+Added task 1 to VM 1 at 69120
+VM utilization: 1
+Task in VM: 1
+Machine utilization: 1
+Attached VM 2 to machine 2 at 79245
+Attached VM of type 0 to machine of type 3
+Added task 2 to VM 2 at 79245
+VM utilization: 1
+Task in VM: 2
+Machine utilization: 1
+Attached VM 3 to machine 3 at 82088
+Attached VM of type 0 to machine of type 3
+Added task 3 to VM 3 at 82088
+VM utilization: 1
+Task in VM: 3
+Machine utilization: 1
+Attached VM 4 to machine 4 at 83315
+Attached VM of type 0 to machine of type 3
+Added task 4 to VM 4 at 83315
+VM utilization: 1
+Task in VM: 4
+Machine utilization: 1
+Attached VM 5 to machine 5 at 84264
+Attached VM of type 0 to machine of type 3
+Added task 5 to VM 5 at 84264
+VM utilization: 1
+Task in VM: 5
+Machine utilization: 1
+Attached VM 6 to machine 6 at 88073
+Attached VM of type 0 to machine of type 3
+Added task 6 to VM 6 at 88073
+VM utilization: 1
+Task in VM: 6
+Machine utilization: 1
+Attached VM 7 to machine 7 at 99188
+Attached VM of type 0 to machine of type 3
+Added task 7 to VM 7 at 99188
+VM utilization: 1
+Task in VM: 7
+Machine utilization: 1
+Attached VM 8 to machine 8 at 99476
+Attached VM of type 0 to machine of type 3
+Added task 8 to VM 8 at 99476
+VM utilization: 1
+Task in VM: 8
+Machine utilization: 1
+Attached VM 9 to machine 9 at 101672
+Attached VM of type 0 to machine of type 3
+Added task 9 to VM 9 at 101672
+VM utilization: 1
+Task in VM: 9
+Machine utilization: 1
+Attached VM 10 to machine 10 at 102193
+Attached VM of type 0 to machine of type 3
+Added task 10 to VM 10 at 102193
+VM utilization: 1
+Task in VM: 10
+Machine utilization: 1
+Attached VM 11 to machine 11 at 106546
+Attached VM of type 0 to machine of type 3
+Added task 11 to VM 11 at 106546
+VM utilization: 1
+Task in VM: 11
+Machine utilization: 1
+Attached VM 12 to machine 12 at 111277
+Attached VM of type 0 to machine of type 3
+Added task 12 to VM 12 at 111277
+VM utilization: 1
+Task in VM: 12
+Machine utilization: 1
+Attached VM 13 to machine 13 at 115053
+Attached VM of type 0 to machine of type 3
+Added task 13 to VM 13 at 115053
+VM utilization: 1
+Task in VM: 13
+Machine utilization: 1
+Attached VM 14 to machine 14 at 125954
+Attached VM of type 0 to machine of type 3
+Added task 14 to VM 14 at 125954
+VM utilization: 1
+Task in VM: 14
+Machine utilization: 1
+Attached VM 15 to machine 15 at 136933
+Attached VM of type 0 to machine of type 3
+Added task 15 to VM 15 at 136933
+VM utilization: 1
+Task in VM: 15
+Machine utilization: 1
+Added task 16 to VM 0 on machine 0 at 137729
+VM utilizatoin: 2
+Task in VM: 0
+Task in VM: 16
+Machine utilization: 1
+Added task 17 to VM 0 on machine 0 at 138408
+VM utilizatoin: 3
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Machine utilization: 1
+Added task 18 to VM 0 on machine 0 at 140873
+VM utilizatoin: 4
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Machine utilization: 1
+Added task 19 to VM 0 on machine 0 at 140987
+VM utilizatoin: 5
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Machine utilization: 1
+Added task 20 to VM 0 on machine 0 at 141723
+VM utilizatoin: 6
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Task in VM: 20
+Machine utilization: 1
+Added task 21 to VM 0 on machine 0 at 142064
+VM utilizatoin: 7
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Task in VM: 20
+Task in VM: 21
+Machine utilization: 1
+Added task 22 to VM 0 on machine 0 at 155864
+VM utilizatoin: 8
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Task in VM: 20
+Task in VM: 21
+Task in VM: 22
+Machine utilization: 1
+Added task 23 to VM 0 on machine 0 at 157795
+VM utilizatoin: 9
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Task in VM: 20
+Task in VM: 21
+Task in VM: 22
+Task in VM: 23
+Machine utilization: 1
+Added task 24 to VM 0 on machine 0 at 174562
+VM utilizatoin: 10
+Task in VM: 0
+Task in VM: 16
+Task in VM: 17
+Task in VM: 18
+Task in VM: 19
+Task in VM: 20
+Task in VM: 21
+Task in VM: 22
+Task in VM: 23
+Task in VM: 24
+Machine utilization: 1
+Attached VM 16 to machine 0 at 177975
+Attached VM of type 0 to machine of type 3
+Added task 25 to VM 16 at 177975
+VM utilization: 1
+Task in VM: 25
+Machine utilization: 2
+Added task 26 to VM 1 on machine 1 at 182665
+VM utilizatoin: 2
+Task in VM: 1
+Task in VM: 26
+Machine utilization: 1
+Added task 27 to VM 1 on machine 1 at 188025
+VM utilizatoin: 3
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Machine utilization: 1
+Added task 28 to VM 1 on machine 1 at 188288
+VM utilizatoin: 4
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Machine utilization: 1
+Added task 29 to VM 1 on machine 1 at 192012
+VM utilizatoin: 5
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Machine utilization: 1
+Added task 30 to VM 1 on machine 1 at 194858
+VM utilizatoin: 6
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Task in VM: 30
+Machine utilization: 1
+Added task 31 to VM 1 on machine 1 at 198781
+VM utilizatoin: 7
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Task in VM: 30
+Task in VM: 31
+Machine utilization: 1
+Added task 32 to VM 1 on machine 1 at 208772
+VM utilizatoin: 8
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Task in VM: 30
+Task in VM: 31
+Task in VM: 32
+Machine utilization: 1
+Added task 33 to VM 1 on machine 1 at 211306
+VM utilizatoin: 9
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Task in VM: 30
+Task in VM: 31
+Task in VM: 32
+Task in VM: 33
+Machine utilization: 1
+Added task 34 to VM 1 on machine 1 at 237050
+VM utilizatoin: 10
+Task in VM: 1
+Task in VM: 26
+Task in VM: 27
+Task in VM: 28
+Task in VM: 29
+Task in VM: 30
+Task in VM: 31
+Task in VM: 32
+Task in VM: 33
+Task in VM: 34
+Machine utilization: 1
+Attached VM 17 to machine 1 at 242618
+Attached VM of type 0 to machine of type 3
+Added task 35 to VM 17 at 242618
+VM utilization: 1
+Task in VM: 35
+Machine utilization: 2
+Added task 36 to VM 2 on machine 2 at 242692
+VM utilizatoin: 2
+Task in VM: 2
+Task in VM: 36
+Machine utilization: 1
+Added task 37 to VM 2 on machine 2 at 249108
+VM utilizatoin: 3
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Machine utilization: 1
+Added task 38 to VM 2 on machine 2 at 251445
+VM utilizatoin: 4
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Machine utilization: 1
+Added task 39 to VM 2 on machine 2 at 257630
+VM utilizatoin: 5
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Machine utilization: 1
+Added task 40 to VM 2 on machine 2 at 264998
+VM utilizatoin: 6
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Task in VM: 40
+Machine utilization: 1
+Added task 41 to VM 2 on machine 2 at 276602
+VM utilizatoin: 7
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Task in VM: 40
+Task in VM: 41
+Machine utilization: 1
+Added task 42 to VM 2 on machine 2 at 280241
+VM utilizatoin: 8
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Task in VM: 40
+Task in VM: 41
+Task in VM: 42
+Machine utilization: 1
+Added task 43 to VM 2 on machine 2 at 287547
+VM utilizatoin: 9
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Task in VM: 40
+Task in VM: 41
+Task in VM: 42
+Task in VM: 43
+Machine utilization: 1
+Added task 44 to VM 2 on machine 2 at 289611
+VM utilizatoin: 10
+Task in VM: 2
+Task in VM: 36
+Task in VM: 37
+Task in VM: 38
+Task in VM: 39
+Task in VM: 40
+Task in VM: 41
+Task in VM: 42
+Task in VM: 43
+Task in VM: 44
+Machine utilization: 1
+Attached VM 18 to machine 2 at 324718
+Attached VM of type 0 to machine of type 3
+Added task 45 to VM 18 at 324718
+VM utilization: 1
+Task in VM: 45
+Machine utilization: 2
+Added task 46 to VM 3 on machine 3 at 326180
+VM utilizatoin: 2
+Task in VM: 3
+Task in VM: 46
+Machine utilization: 1
+Added task 47 to VM 3 on machine 3 at 329823
+VM utilizatoin: 3
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Machine utilization: 1
+Added task 48 to VM 3 on machine 3 at 349292
+VM utilizatoin: 4
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Machine utilization: 1
+Added task 49 to VM 3 on machine 3 at 358151
+VM utilizatoin: 5
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Machine utilization: 1
+Added task 50 to VM 3 on machine 3 at 369395
+VM utilizatoin: 6
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Task in VM: 50
+Machine utilization: 1
+Added task 51 to VM 3 on machine 3 at 374405
+VM utilizatoin: 7
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Task in VM: 50
+Task in VM: 51
+Machine utilization: 1
+Added task 52 to VM 3 on machine 3 at 386350
+VM utilizatoin: 8
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Task in VM: 50
+Task in VM: 51
+Task in VM: 52
+Machine utilization: 1
+Added task 53 to VM 3 on machine 3 at 398400
+VM utilizatoin: 9
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Task in VM: 50
+Task in VM: 51
+Task in VM: 52
+Task in VM: 53
+Machine utilization: 1
+Added task 54 to VM 3 on machine 3 at 401481
+VM utilizatoin: 10
+Task in VM: 3
+Task in VM: 46
+Task in VM: 47
+Task in VM: 48
+Task in VM: 49
+Task in VM: 50
+Task in VM: 51
+Task in VM: 52
+Task in VM: 53
+Task in VM: 54
+Machine utilization: 1
+Attached VM 19 to machine 3 at 408570
+Attached VM of type 0 to machine of type 3
+Added task 55 to VM 19 at 408570
+VM utilization: 1
+Task in VM: 55
+Machine utilization: 2
+Added task 56 to VM 4 on machine 4 at 418450
+VM utilizatoin: 2
+Task in VM: 4
+Task in VM: 56
+Machine utilization: 1
+Added task 57 to VM 4 on machine 4 at 422817
+VM utilizatoin: 3
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Machine utilization: 1
+Added task 58 to VM 4 on machine 4 at 431331
+VM utilizatoin: 4
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Machine utilization: 1
+Added task 59 to VM 4 on machine 4 at 440607
+VM utilizatoin: 5
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Machine utilization: 1
+Added task 60 to VM 4 on machine 4 at 444306
+VM utilizatoin: 6
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Task in VM: 60
+Machine utilization: 1
+Added task 61 to VM 4 on machine 4 at 444543
+VM utilizatoin: 7
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Task in VM: 60
+Task in VM: 61
+Machine utilization: 1
+Added task 62 to VM 4 on machine 4 at 449541
+VM utilizatoin: 8
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Task in VM: 60
+Task in VM: 61
+Task in VM: 62
+Machine utilization: 1
+Added task 63 to VM 4 on machine 4 at 455177
+VM utilizatoin: 9
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Task in VM: 60
+Task in VM: 61
+Task in VM: 62
+Task in VM: 63
+Machine utilization: 1
+Added task 64 to VM 4 on machine 4 at 466490
+VM utilizatoin: 10
+Task in VM: 4
+Task in VM: 56
+Task in VM: 57
+Task in VM: 58
+Task in VM: 59
+Task in VM: 60
+Task in VM: 61
+Task in VM: 62
+Task in VM: 63
+Task in VM: 64
+Machine utilization: 1
+Attached VM 20 to machine 4 at 470995
+Attached VM of type 0 to machine of type 3
+Added task 65 to VM 20 at 470995
+VM utilization: 1
+Task in VM: 65
+Machine utilization: 2
+Added task 66 to VM 5 on machine 5 at 477476
+VM utilizatoin: 2
+Task in VM: 5
+Task in VM: 66
+Machine utilization: 1
+Added task 67 to VM 5 on machine 5 at 480787
+VM utilizatoin: 3
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Machine utilization: 1
+Added task 68 to VM 5 on machine 5 at 485720
+VM utilizatoin: 4
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Machine utilization: 1
+Added task 69 to VM 5 on machine 5 at 490153
+VM utilizatoin: 5
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Machine utilization: 1
+Added task 70 to VM 5 on machine 5 at 504943
+VM utilizatoin: 6
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Task in VM: 70
+Machine utilization: 1
+Added task 71 to VM 5 on machine 5 at 513975
+VM utilizatoin: 7
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Task in VM: 70
+Task in VM: 71
+Machine utilization: 1
+Added task 72 to VM 5 on machine 5 at 517327
+VM utilizatoin: 8
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Task in VM: 70
+Task in VM: 71
+Task in VM: 72
+Machine utilization: 1
+Added task 73 to VM 5 on machine 5 at 519144
+VM utilizatoin: 9
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Task in VM: 70
+Task in VM: 71
+Task in VM: 72
+Task in VM: 73
+Machine utilization: 1
+Added task 74 to VM 5 on machine 5 at 522681
+VM utilizatoin: 10
+Task in VM: 5
+Task in VM: 66
+Task in VM: 67
+Task in VM: 68
+Task in VM: 69
+Task in VM: 70
+Task in VM: 71
+Task in VM: 72
+Task in VM: 73
+Task in VM: 74
+Machine utilization: 1
+Attached VM 21 to machine 5 at 525217
+Attached VM of type 0 to machine of type 3
+Added task 75 to VM 21 at 525217
+VM utilization: 1
+Task in VM: 75
+Machine utilization: 2
+Added task 76 to VM 6 on machine 6 at 528184
+VM utilizatoin: 2
+Task in VM: 6
+Task in VM: 76
+Machine utilization: 1
+Added task 77 to VM 6 on machine 6 at 529448
+VM utilizatoin: 3
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Machine utilization: 1
+Added task 78 to VM 6 on machine 6 at 530728
+VM utilizatoin: 4
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Machine utilization: 1
+Added task 79 to VM 6 on machine 6 at 544520
+VM utilizatoin: 5
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Machine utilization: 1
+Added task 80 to VM 6 on machine 6 at 552882
+VM utilizatoin: 6
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Task in VM: 80
+Machine utilization: 1
+Added task 81 to VM 6 on machine 6 at 588940
+VM utilizatoin: 7
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Task in VM: 80
+Task in VM: 81
+Machine utilization: 1
+Added task 82 to VM 6 on machine 6 at 590546
+VM utilizatoin: 8
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Task in VM: 80
+Task in VM: 81
+Task in VM: 82
+Machine utilization: 1
+Added task 83 to VM 6 on machine 6 at 590992
+VM utilizatoin: 9
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Task in VM: 80
+Task in VM: 81
+Task in VM: 82
+Task in VM: 83
+Machine utilization: 1
+Added task 84 to VM 6 on machine 6 at 593709
+VM utilizatoin: 10
+Task in VM: 6
+Task in VM: 76
+Task in VM: 77
+Task in VM: 78
+Task in VM: 79
+Task in VM: 80
+Task in VM: 81
+Task in VM: 82
+Task in VM: 83
+Task in VM: 84
+Machine utilization: 1
+Attached VM 22 to machine 6 at 599436
+Attached VM of type 0 to machine of type 3
+Added task 85 to VM 22 at 599436
+VM utilization: 1
+Task in VM: 85
+Machine utilization: 2
+Added task 86 to VM 7 on machine 7 at 600511
+VM utilizatoin: 2
+Task in VM: 7
+Task in VM: 86
+Machine utilization: 1
+Added task 87 to VM 7 on machine 7 at 600617
+VM utilizatoin: 3
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Machine utilization: 1
+Added task 88 to VM 7 on machine 7 at 602943
+VM utilizatoin: 4
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Machine utilization: 1
+Added task 89 to VM 7 on machine 7 at 609640
+VM utilizatoin: 5
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Machine utilization: 1
+Added task 90 to VM 7 on machine 7 at 609644
+VM utilizatoin: 6
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Task in VM: 90
+Machine utilization: 1
+Added task 91 to VM 7 on machine 7 at 611886
+VM utilizatoin: 7
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Task in VM: 90
+Task in VM: 91
+Machine utilization: 1
+Added task 92 to VM 7 on machine 7 at 613217
+VM utilizatoin: 8
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Task in VM: 90
+Task in VM: 91
+Task in VM: 92
+Machine utilization: 1
+Added task 93 to VM 7 on machine 7 at 626893
+VM utilizatoin: 9
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Task in VM: 90
+Task in VM: 91
+Task in VM: 92
+Task in VM: 93
+Machine utilization: 1
+Added task 94 to VM 7 on machine 7 at 631621
+VM utilizatoin: 10
+Task in VM: 7
+Task in VM: 86
+Task in VM: 87
+Task in VM: 88
+Task in VM: 89
+Task in VM: 90
+Task in VM: 91
+Task in VM: 92
+Task in VM: 93
+Task in VM: 94
+Machine utilization: 1
+Attached VM 23 to machine 7 at 631670
+Attached VM of type 0 to machine of type 3
+Added task 95 to VM 23 at 631670
+VM utilization: 1
+Task in VM: 95
+Machine utilization: 2
+Added task 96 to VM 8 on machine 8 at 639273
+VM utilizatoin: 2
+Task in VM: 8
+Task in VM: 96
+Machine utilization: 1
+Added task 97 to VM 8 on machine 8 at 655961
+VM utilizatoin: 3
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Machine utilization: 1
+Added task 98 to VM 8 on machine 8 at 659328
+VM utilizatoin: 4
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Machine utilization: 1
+Added task 99 to VM 8 on machine 8 at 663427
+VM utilizatoin: 5
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Machine utilization: 1
+Added task 100 to VM 8 on machine 8 at 665828
+VM utilizatoin: 6
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Task in VM: 100
+Machine utilization: 1
+Added task 101 to VM 8 on machine 8 at 667343
+VM utilizatoin: 7
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Task in VM: 100
+Task in VM: 101
+Machine utilization: 1
+Added task 102 to VM 8 on machine 8 at 675523
+VM utilizatoin: 8
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Task in VM: 100
+Task in VM: 101
+Task in VM: 102
+Machine utilization: 1
+Added task 103 to VM 8 on machine 8 at 699769
+VM utilizatoin: 9
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Task in VM: 100
+Task in VM: 101
+Task in VM: 102
+Task in VM: 103
+Machine utilization: 1
+Added task 104 to VM 8 on machine 8 at 702865
+VM utilizatoin: 10
+Task in VM: 8
+Task in VM: 96
+Task in VM: 97
+Task in VM: 98
+Task in VM: 99
+Task in VM: 100
+Task in VM: 101
+Task in VM: 102
+Task in VM: 103
+Task in VM: 104
+Machine utilization: 1
+Attached VM 24 to machine 8 at 706711
+Attached VM of type 0 to machine of type 3
+Added task 105 to VM 24 at 706711
+VM utilization: 1
+Task in VM: 105
+Machine utilization: 2
+Added task 106 to VM 9 on machine 9 at 713161
+VM utilizatoin: 2
+Task in VM: 9
+Task in VM: 106
+Machine utilization: 1
+Added task 107 to VM 9 on machine 9 at 713797
+VM utilizatoin: 3
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Machine utilization: 1
+Added task 108 to VM 9 on machine 9 at 729204
+VM utilizatoin: 4
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Machine utilization: 1
+Added task 109 to VM 9 on machine 9 at 732290
+VM utilizatoin: 5
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Machine utilization: 1
+Added task 110 to VM 9 on machine 9 at 733684
+VM utilizatoin: 6
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Task in VM: 110
+Machine utilization: 1
+Added task 111 to VM 9 on machine 9 at 734616
+VM utilizatoin: 7
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Task in VM: 110
+Task in VM: 111
+Machine utilization: 1
+Added task 112 to VM 9 on machine 9 at 737771
+VM utilizatoin: 8
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Task in VM: 110
+Task in VM: 111
+Task in VM: 112
+Machine utilization: 1
+Added task 113 to VM 9 on machine 9 at 738497
+VM utilizatoin: 9
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Task in VM: 110
+Task in VM: 111
+Task in VM: 112
+Task in VM: 113
+Machine utilization: 1
+Added task 114 to VM 9 on machine 9 at 744915
+VM utilizatoin: 10
+Task in VM: 9
+Task in VM: 106
+Task in VM: 107
+Task in VM: 108
+Task in VM: 109
+Task in VM: 110
+Task in VM: 111
+Task in VM: 112
+Task in VM: 113
+Task in VM: 114
+Machine utilization: 1
+Attached VM 25 to machine 9 at 745147
+Attached VM of type 0 to machine of type 3
+Added task 115 to VM 25 at 745147
+VM utilization: 1
+Task in VM: 115
+Machine utilization: 2
+Added task 116 to VM 10 on machine 10 at 749609
+VM utilizatoin: 2
+Task in VM: 10
+Task in VM: 116
+Machine utilization: 1
+Added task 117 to VM 10 on machine 10 at 749701
+VM utilizatoin: 3
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Machine utilization: 1
+Added task 118 to VM 10 on machine 10 at 776182
+VM utilizatoin: 4
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Machine utilization: 1
+Added task 119 to VM 10 on machine 10 at 781813
+VM utilizatoin: 5
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Machine utilization: 1
+Added task 120 to VM 10 on machine 10 at 783022
+VM utilizatoin: 6
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Task in VM: 120
+Machine utilization: 1
+Added task 121 to VM 10 on machine 10 at 783730
+VM utilizatoin: 7
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Task in VM: 120
+Task in VM: 121
+Machine utilization: 1
+Added task 122 to VM 10 on machine 10 at 784401
+VM utilizatoin: 8
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Task in VM: 120
+Task in VM: 121
+Task in VM: 122
+Machine utilization: 1
+Added task 123 to VM 10 on machine 10 at 785043
+VM utilizatoin: 9
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Task in VM: 120
+Task in VM: 121
+Task in VM: 122
+Task in VM: 123
+Machine utilization: 1
+Added task 124 to VM 10 on machine 10 at 788549
+VM utilizatoin: 10
+Task in VM: 10
+Task in VM: 116
+Task in VM: 117
+Task in VM: 118
+Task in VM: 119
+Task in VM: 120
+Task in VM: 121
+Task in VM: 122
+Task in VM: 123
+Task in VM: 124
+Machine utilization: 1
+Attached VM 26 to machine 10 at 794402
+Attached VM of type 0 to machine of type 3
+Added task 125 to VM 26 at 794402
+VM utilization: 1
+Task in VM: 125
+Machine utilization: 2
+Added task 126 to VM 11 on machine 11 at 796563
+VM utilizatoin: 2
+Task in VM: 11
+Task in VM: 126
+Machine utilization: 1
+Added task 127 to VM 11 on machine 11 at 802005
+VM utilizatoin: 3
+Task in VM: 11
+Task in VM: 126
+Task in VM: 127
+Machine utilization: 1
+Scheduler::TaskComplete(): Task 13 is complete at 1435244
+Low Efficiency Machine VMs: 
+10
+26
+High Efficiency Machine VMs: 
+11
+Migrating VM 26 from machine 10 to machine 11
+Low Efficiency Machine VM size: 1
+High Efficiency Machine VM size: 2
+Low Efficiency Machine VMs: 
+10
+High Efficiency Machine VMs: 
+11
+26
+Migrating VM 10 from machine 10 to machine 11
+Low Efficiency Machine VM size: 0
+High Efficiency Machine VM size: 3
+Low Efficiency Machine VMs: 
+9
+25
+High Efficiency Machine VMs: 
+11
+26
+10
+Migrating VM 25 from machine 9 to machine 11
+Low Efficiency Machine VM size: 1
+High Efficiency Machine VM size: 4
+Low Efficiency Machine VMs: 
+9
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+Migrating VM 9 from machine 9 to machine 11
+Low Efficiency Machine VM size: 0
+High Efficiency Machine VM size: 5
+Low Efficiency Machine VMs: 
+8
+24
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+9
+Migrating VM 24 from machine 8 to machine 11
+Low Efficiency Machine VM size: 1
+High Efficiency Machine VM size: 6
+Low Efficiency Machine VMs: 
+8
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+9
+24
+Migrating VM 8 from machine 8 to machine 11
+Low Efficiency Machine VM size: 0
+High Efficiency Machine VM size: 7
+Low Efficiency Machine VMs: 
+7
+23
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+9
+24
+8
+Migrating VM 23 from machine 7 to machine 11
+Low Efficiency Machine VM size: 1
+High Efficiency Machine VM size: 8
+Low Efficiency Machine VMs: 
+7
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+9
+24
+8
+23
+Migrating VM 7 from machine 7 to machine 11
+Low Efficiency Machine VM size: 0
+High Efficiency Machine VM size: 9
+Low Efficiency Machine VMs: 
+6
+22
+High Efficiency Machine VMs: 
+11
+26
+10
+25
+9
+24
+8
+23
+7
+Migrating VM 22 from machine 6 to machine 11
+Low Efficiency Machine VM size: 1
+High Efficiency Machine VM size: 10

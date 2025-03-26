@@ -14,12 +14,6 @@
 static bool migrating = false;
 static unsigned active_machines;
 
-// struct MachineStatus {
-//     MachineId_t id;
-//     unsigned utilization;
-//     vector<VMId_t> vms;
-// };
-
 class Compare {
 public:
     bool operator() (const MachineStatus &a, const MachineStatus &b) const {
@@ -36,14 +30,15 @@ public:
 
         if (a_efficiency != b_efficiency)
             return a_efficiency > b_efficiency; // Most efficient first.
-        if (a.utilization != b.utilization)
-            return a.utilization < b.utilization; // Lower utilization as a tiebreaker.
+        if (a.vms.size() != b.vms.size())
+            return a.vms.size() < b.vms.size(); // Lower utilization as a tiebreaker.
         return a.id < b.id;
     }
 };
 
 // List of servers sorted by their energy efficiency, most efficient to least efficient
 set<MachineStatus, Compare> machine_status;
+vector<bool> isVMMigrating;
 
 void Scheduler::Init() {
     // Find the parameters of the clusters
@@ -71,7 +66,7 @@ void Scheduler::Init() {
     //     vms.push_back(VM_Create(LINUX, X86));
     for(unsigned i = 0; i < active_machines; i++) {
         machines.push_back(MachineId_t(i));
-        machine_status.insert({MachineId_t(i), 0, {}});
+        machine_status.insert({MachineId_t(i), {}});
     }    
     // for(unsigned i = 0; i < active_machines; i++) {
     //     VM_Attach(vms[i], machines[i]);
@@ -91,6 +86,9 @@ void Scheduler::Init() {
 
 void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
     // Update your data structure. The VM now can receive new tasks
+    SimOutput("Scheduler::MigrationComplete(): Migration of VM " + to_string(vm_id) + " is complete at " + to_string(time), 3);
+    migrating = false;
+    isVMMigrating[vm_id] = false;
 }
 
 void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
@@ -128,7 +126,6 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 
         MachineStatus modified_machine;
         modified_machine.id = machine.id;
-        modified_machine.utilization = machine.utilization;
         modified_machine.vms = machine.vms;
 
         bool added = false;
@@ -138,14 +135,20 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
         for(unsigned i = 0;i < modified_machine.vms.size();i++){
             if(canRunTask(modified_machine.vms[i], task_id)){
                 VM_AddTask(modified_machine.vms[i], task_id, priority);
-                SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(modified_machine.vms[i]) + " at " + to_string(now), 3);
+                SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(modified_machine.vms[i]) + " on machine " + to_string(modified_machine.id) + " at " + to_string(now), 3);
                 added = true;
-                modified_machine.utilization++;
-                SimOutput("Machine utilization: " + to_string(modified_machine.utilization), 3);
+                VMInfo_t vm_info = VM_GetInfo(modified_machine.vms[i]);
+                // vm_info.active_tasks.push_back(task_id);
+                SimOutput("VM utilizatoin: " + to_string(vm_info.active_tasks.size()), 3);
+                // Print out tasks in VM
+                for(TaskId_t task: vm_info.active_tasks){
+                    SimOutput("Task in VM: " + to_string(task), 3);
+                }
+                SimOutput("Machine utilization: " + to_string(modified_machine.vms.size()), 3);
                 // Update the set by removing the old machine and adding the modified machine from the set of machines
                 machine_status.erase(machine);
                 machine_status.insert(modified_machine);
-                break;
+                return;
             }
         }
         
@@ -153,18 +156,26 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
         if(!added){
             if(canAttachVM(modified_machine)){
                 VMId_t vm_new = VM_Create(task_required_vm_type, task_required_cpu);
+                isVMMigrating.push_back(false);
                 VM_Attach(vm_new, modified_machine.id);
                 SimOutput("Attached VM " + to_string(vm_new) + " to machine " + to_string(modified_machine.id) + " at " + to_string(now), 3);
                 SimOutput("Attached VM of type " + to_string(task_required_vm_type) + " to machine of type " + to_string(task_required_cpu), 3);
                 VM_AddTask(vm_new, task_id, priority);
                 SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(vm_new) + " at " + to_string(now), 3);
                 modified_machine.vms.push_back(vm_new);
-                modified_machine.utilization++;
-                SimOutput("Machine utilization: " + to_string(modified_machine.utilization), 3);
+                VMInfo_t vm_info = VM_GetInfo(vm_new);
+                // vm_info.active_tasks.push_back(task_id);
+                SimOutput("VM utilization: " + to_string(vm_info.active_tasks.size()), 3);
+                // Print out tasks in VM
+                for(TaskId_t task: vm_info.active_tasks){
+                    SimOutput("Task in VM: " + to_string(task), 3);
+                }
+
+                SimOutput("Machine utilization: " + to_string(modified_machine.vms.size()), 3);
                 // Update the set by removing the old machine and adding the modified machine from the set of machines
                 machine_status.erase(machine);
                 machine_status.insert(modified_machine);
-                break;
+                return;
             }
         }
 
@@ -218,54 +229,10 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // This is an opportunity to make any adjustments to optimize performance/energy
     SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 3);
 
-    // Divide servers into two halves based on utilization AND machine efficiency
-    vector<MachineStatus> low_efficiency_machines;
-    vector<MachineStatus> high_efficiency_machines;
-    unsigned i = 0;
-    for(MachineStatus machine: machine_status) {
-        if(i < machine_status.size() / 2) {
-            high_efficiency_machines.push_back(machine);
-        }
-        else {
-            low_efficiency_machines.push_back(machine);
-        }
-        i++;
-    }
-
-    // Find smallest workload in least utilized and efficienct server
-    // Migrate the workload to one of the highly utilized and efficient servers
-    // Repeat until no more to migrate
-    int currHighEfficiencyMachine = 0;
-    int currLowEfficiencyMachine = low_efficiency_machines.size() - 1;
-    while(currLowEfficiencyMachine >= 0) {
-        // Find the next high efficiency machine that is not full
-        while(currHighEfficiencyMachine < high_efficiency_machines.size() && high_efficiency_machines[currHighEfficiencyMachine].utilization == MAX_VM_PER_MACHINE) {
-            currHighEfficiencyMachine++;
-        }
-        if(currHighEfficiencyMachine >= high_efficiency_machines.size()) {
-            break;
-        }
-
-        MachineStatus le_machine = low_efficiency_machines[currLowEfficiencyMachine];
-        MachineStatus he_machine = high_efficiency_machines[currHighEfficiencyMachine];
-
-        // If possible, migrate VMs from low efficiency machine to high efficiency machine
-        while(le_machine.vms.size() > 0 && he_machine.vms.size() < MAX_VM_PER_MACHINE) {
-            VMId_t vmToMigrate = le_machine.vms.back();
-            le_machine.vms.pop_back();
-            migrating = true;
-            SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " + to_string(le_machine.id) + " to machine " + to_string(he_machine.id), 3);
-            VM_Migrate(vmToMigrate, he_machine.id);
-            he_machine.vms.push_back(vmToMigrate);
-            le_machine.utilization--;
-            he_machine.utilization++;
-        }
-        
-        // If the low efficiency machine is empty, move to the next one
-        if(le_machine.utilization == 0) {
-            currLowEfficiencyMachine--;
-        }
-    }
+    migrateVMsToHigherEfficiencyMachines(ARM);
+    migrateVMsToHigherEfficiencyMachines(X86);
+    migrateVMsToHigherEfficiencyMachines(POWER);
+    migrateVMsToHigherEfficiencyMachines(RISCV);
 }
 
 // Public interface below
@@ -296,7 +263,6 @@ void MigrationDone(Time_t time, VMId_t vm_id) {
     // The function is called on to alert you that migration is complete
     SimOutput("MigrationDone(): Migration of VM " + to_string(vm_id) + " was completed at time " + to_string(time), 4);
     Scheduler.MigrationComplete(time, vm_id);
-    migrating = false;
 }
 
 void SchedulerCheck(Time_t time) {
@@ -344,5 +310,94 @@ bool canRunTask(VMId_t vm, TaskId_t task_id){
 bool canAttachVM(MachineStatus machine){
     bool isOverloaded = machine.vms.size() >= MAX_VM_PER_MACHINE;
     return !isOverloaded;
+}
+
+void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
+    // Divide servers into two halves based on utilization AND machine efficiency
+    vector<MachineStatus> low_efficiency_machines;
+    vector<MachineStatus> high_efficiency_machines;
+
+    unsigned numMachines = 0;
+    for(MachineStatus machine: machine_status){
+        MachineInfo_t info = Machine_GetInfo(machine.id);
+        if(info.cpu == cpuType){
+            numMachines++;
+        }
+    }
+
+    unsigned i = 0;
+    for(MachineStatus machine: machine_status) {
+        MachineInfo_t info = Machine_GetInfo(machine.id);
+        if(info.cpu != cpuType) continue;
+
+        if(i < numMachines / 2) {
+            high_efficiency_machines.push_back(machine);
+        }
+        else {
+            low_efficiency_machines.push_back(machine);
+        }
+        i++;
+    }
+
+    // Find smallest workload in least utilized and efficienct server
+    // Migrate the workload to one of the highly utilized and efficient servers
+    // Repeat until no more to migrate
+    int currHighEfficiencyMachine = 0;
+    int currLowEfficiencyMachine = low_efficiency_machines.size() - 1;
+    while(currLowEfficiencyMachine >= 0) {
+        // Find the next high efficiency machine that is not full
+        while(currHighEfficiencyMachine < high_efficiency_machines.size() && high_efficiency_machines[currHighEfficiencyMachine].vms.size() == MAX_VM_PER_MACHINE) {
+            currHighEfficiencyMachine++;
+        }
+        if(currHighEfficiencyMachine >= high_efficiency_machines.size()) {
+            break;
+        }
+
+        MachineStatus le_machine = low_efficiency_machines[currLowEfficiencyMachine];
+        MachineStatus he_machine = high_efficiency_machines[currHighEfficiencyMachine];
+
+        machine_status.erase(le_machine);
+        machine_status.erase(he_machine);
+
+        // If possible, migrate VMs from low efficiency machine to high efficiency machine
+        int le_machine_vms_ind = le_machine.vms.size() - 1;
+        while(le_machine_vms_ind > 0 && he_machine.vms.size() < MAX_VM_PER_MACHINE) {
+            // Print out VMs in each machine before migration
+            SimOutput("Low Efficiency Machine VMs: ", 3);
+            for(VMId_t vm: le_machine.vms){
+                SimOutput(to_string(vm), 3);
+            }
+            SimOutput("High Efficiency Machine VMs: ", 3);
+            for(VMId_t vm: he_machine.vms){
+                SimOutput(to_string(vm), 3);
+            }
+
+            while(le_machine_vms_ind >= 0 && isVMMigrating[le_machine.vms[le_machine_vms_ind]]) {
+                le_machine_vms_ind--;
+            }
+            if(le_machine_vms_ind < 0) {
+                break;
+            }
+            VMId_t vmToMigrate = le_machine.vms[le_machine_vms_ind];
+            le_machine.vms.erase(le_machine.vms.begin() + le_machine_vms_ind);
+            isVMMigrating[vmToMigrate] = true;
+            SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " + to_string(le_machine.id) + " to machine " + to_string(he_machine.id), 3);
+            VM_Migrate(vmToMigrate, he_machine.id);
+            he_machine.vms.push_back(vmToMigrate);
+            SimOutput("Low Efficiency Machine VM size: " + to_string(le_machine.vms.size()), 3);
+            SimOutput("High Efficiency Machine VM size: " + to_string(he_machine.vms.size()), 3);
+        }
+
+        machine_status.insert(le_machine);
+        machine_status.insert(he_machine);
+
+        low_efficiency_machines[currLowEfficiencyMachine] = le_machine;
+        high_efficiency_machines[currHighEfficiencyMachine] = he_machine;
+        
+        // If the low efficiency machine is empty, move to the next one
+        if(le_machine.vms.size() == 0) {
+            currLowEfficiencyMachine--;
+        }
+    }
 }
 
