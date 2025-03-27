@@ -1,3 +1,3 @@
 make scheduler
 make simulator
-./simulator -v 3 inputs/Input.md > output.txt
+./simulator -v 3 inputs/TallShort.md > output.txt

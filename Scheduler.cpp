@@ -6,7 +6,7 @@
 //
 
 #define MAX_TASKS_PER_VM 10
-#define MAX_VM_PER_MACHINE 1000
+#define MAX_VM_PER_MACHINE 100
 
 using namespace std;
 
@@ -109,20 +109,15 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
     //  RequiredVMType(task_id);
     VMType_t task_required_vm_type = RequiredVMType(task_id);
     //  RequiredSLA(task_id);
-    SLAType_t task_required_sla = RequiredSLA(task_id);
+    // SLAType_t task_required_sla = RequiredSLA(task_id);
     //  RequiredCPUType(task_id);
     CPUType_t task_required_cpu = RequiredCPUType(task_id);
 
     // Decide to attach the task to an existing VM, 
     //      vm.AddTask(taskid, Priority_T priority); or
 
-    // Set priority based on SLA
-	Priority_t priority;
-	switch(task_required_sla) {
-		case SLA0: priority = HIGH_PRIORITY; break;
-		case SLA1: priority = MID_PRIORITY; break;
-		default:   priority = LOW_PRIORITY;
-	}
+    // Intiailize all tasks with low priority
+	Priority_t priority = LOW_PRIORITY;
 
     // Sort machines by efficiency
     sort(machine_status.begin(), machine_status.end(), Compare());
@@ -178,6 +173,8 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
                 }
 
                 SimOutput("Machine utilization: " + to_string(machine->vms.size()), 3);
+                MachineInfo_t machine_info = Machine_GetInfo(machine->id);
+                assert(machine_info.memory_used < machine_info.memory_size);
                 return;
             }
         }
@@ -186,6 +183,8 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
     }
 
     // TODO: if no valid machine, wake one up
+
+    SimOutput("Warning! Task missed at " + to_string(now), 3);
 
 
     // Create a new VM, attach the VM to a machine
@@ -212,6 +211,70 @@ void Scheduler::PeriodicCheck(Time_t now) {
     // SchedulerCheck is called periodically by the simulator to allow you to monitor, make decisions, adjustments, etc.
     // Unlike the other invocations of the scheduler, this one doesn't report any specific event
     // Recommendation: Take advantage of this function to do some monitoring and adjustments as necessary
+
+    // Iterate through all tasks and change priorities as necessary:
+    // 1. If a task has less than 20% of its run time left, set priority to high
+    // 2. If a task has less than 50% of its run time left, set priority to mid
+    // 3. If a task has more than 50% of its run time left, set priority to low
+    // A better way to assign priorities would probably be to use a combination of remaining instructions and time left, but this is simpler.
+    double high_priority_threshold = 0.2;
+    double mid_priority_threshold = 0.5;
+    for(MachineStatus* machine : machine_status){
+        for(VMId_t vm: machine->vms){
+            VMInfo_t vm_info = VM_GetInfo(vm);
+            for(TaskId_t task: vm_info.active_tasks){
+                TaskInfo_t task_info = GetTaskInfo(task);
+                Time_t total_time_given = task_info.target_completion - task_info.arrival;
+                Time_t total_time_elapsed = now - task_info.arrival;
+                double percent_time_elapsed = (double)total_time_elapsed / total_time_given;
+                double percent_time_remaining = 1 - percent_time_elapsed;
+                if(percent_time_remaining < high_priority_threshold){
+                    SetTaskPriority(task, HIGH_PRIORITY);
+                }
+                else if(percent_time_remaining < mid_priority_threshold){
+                    SetTaskPriority(task, MID_PRIORITY);
+                }
+                else{
+                    SetTaskPriority(task, LOW_PRIORITY);
+                }
+            }
+        }
+    }
+
+
+    // This priority setting scheme more complicated and doesn't work as well for (SpikeyMean and MatchMeIfYouCan and BigSmall)
+    // Works better on TallShort though
+
+    // Iterate through all tasks and change priorities as based on progress relative to time:
+    // Let pc (percent_instructions_completed) - the percentage of the task instructions that are completed
+    // Let pt (percent_time_remaining) - the percentage of the task time remaining
+    // 1. If pc < pt or has already violated SLA, set priority to high
+    // 2. If pc > pt, set priority to mid
+    // 3. If task is SLA3, set priority to low
+    // for(MachineStatus* machine : machine_status){
+    //     for(VMId_t vm: machine->vms){
+    //         VMInfo_t vm_info = VM_GetInfo(vm);
+    //         for(TaskId_t task: vm_info.active_tasks){
+    //             TaskInfo_t task_info = GetTaskInfo(task);
+    //             uint64_t instructions_completed = task_info.total_instructions - task_info.remaining_instructions;
+    //             double percent_instructions_completed = (double)instructions_completed / task_info.total_instructions;
+    //             Time_t total_time_given = task_info.target_completion - task_info.arrival;
+    //             Time_t total_time_elapsed = now - task_info.arrival;
+    //             assert(total_time_given != 0);
+    //             double percent_time_elapsed = (double)total_time_elapsed / total_time_given;
+    //             double percent_time_remaining = 1 - percent_time_elapsed;
+    //             if(IsSLAViolation(task) || percent_instructions_completed < percent_time_remaining){
+    //                 SetTaskPriority(task, HIGH_PRIORITY);
+    //             }
+    //             else if(percent_instructions_completed > percent_time_remaining){
+    //                 SetTaskPriority(task, MID_PRIORITY);
+    //             }
+    //             else if(task_info.required_sla == SLA3){
+    //                 SetTaskPriority(task, LOW_PRIORITY);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 void Scheduler::Shutdown(Time_t time) {
@@ -232,18 +295,18 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // This is an opportunity to make any adjustments to optimize performance/energy
     SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 3);
 
-    SimOutput("Migrating ARM VMs to higher efficiency machines", 3);
+    SimOutput("Migrating ARM VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(ARM);
-    SimOutput("Successfully migrated ARM VMs to higher efficiency machines", 3);
-    SimOutput("Migrating X86 VMs to higher efficiency machines", 3);
+    SimOutput("Successfully migrated ARM VMs to higher efficiency machines", 4);
+    SimOutput("Migrating X86 VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(X86);
-    SimOutput("Successfully migrated X86 VMs to higher efficiency machines", 3);
-    SimOutput("Migrating POWER VMs to higher efficiency machines", 3);
+    SimOutput("Successfully migrated X86 VMs to higher efficiency machines", 4);
+    SimOutput("Migrating POWER VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(POWER);
-    SimOutput("Successfully migrated POWER VMs to higher efficiency machines", 3);
-    SimOutput("Migrating RISCV VMs to higher efficiency machines", 3);
+    SimOutput("Successfully migrated POWER VMs to higher efficiency machines", 4);
+    SimOutput("Migrating RISCV VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(RISCV);
-    SimOutput("Successfully migrated RISCV VMs to higher efficiency machines", 3);
+    SimOutput("Successfully migrated RISCV VMs to higher efficiency machines", 4);
 }
 
 // Public interface below
