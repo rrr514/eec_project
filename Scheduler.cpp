@@ -5,14 +5,15 @@
 //  Created by ELMOOTAZBELLAH ELNOZAHY on 10/20/24.
 //
 
-#define MAX_TASKS_PER_VM 10
-#define MAX_VM_PER_MACHINE 10
+#define MAX_TASKS_PER_VM 100
+#define MAX_VM_PER_MACHINE 100
 
 using namespace std;
 
 #include "Scheduler.hpp"
 #include <set>
 #include <algorithm>
+#include <cassert>
 
 static bool migrating = false;
 static unsigned active_machines;
@@ -140,8 +141,10 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
         // Look through VM list to see if task can be added to any existing VMs
         for(unsigned i = 0;i < machine->vms.size();i++){
             if(canRunTask(machine->vms[i], task_id)){
+                SimOutput("Adding task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
+                assert(!isVMMigrating[machine->vms[i]]);
                 VM_AddTask(machine->vms[i], task_id, priority);
-                SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
+                SimOutput("Successfully added task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
                 added = true;
                 VMInfo_t vm_info = VM_GetInfo(machine->vms[i]);
                 // vm_info.active_tasks.push_back(task_id);
@@ -229,10 +232,18 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // This is an opportunity to make any adjustments to optimize performance/energy
     SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 3);
 
+    SimOutput("Migrating ARM VMs to higher efficiency machines", 3);
     migrateVMsToHigherEfficiencyMachines(ARM);
+    SimOutput("Successfully migrated ARM VMs to higher efficiency machines", 3);
+    SimOutput("Migrating X86 VMs to higher efficiency machines", 3);
     migrateVMsToHigherEfficiencyMachines(X86);
+    SimOutput("Successfully migrated X86 VMs to higher efficiency machines", 3);
+    SimOutput("Migrating POWER VMs to higher efficiency machines", 3);
     migrateVMsToHigherEfficiencyMachines(POWER);
+    SimOutput("Successfully migrated POWER VMs to higher efficiency machines", 3);
+    SimOutput("Migrating RISCV VMs to higher efficiency machines", 3);
     migrateVMsToHigherEfficiencyMachines(RISCV);
+    SimOutput("Successfully migrated RISCV VMs to higher efficiency machines", 3);
 }
 
 // Public interface below
@@ -304,7 +315,8 @@ bool canRunTask(VMId_t vm, TaskId_t task_id){
     bool correct_vm_type = vm_info.vm_type == RequiredVMType(task_id);
     bool correct_cpu = vm_info.cpu == RequiredCPUType(task_id);
     bool isOverloaded = vm_info.active_tasks.size() >= MAX_TASKS_PER_VM;
-    return correct_vm_type && correct_cpu && !isOverloaded;
+    bool isMigrating = isVMMigrating[vm];
+    return correct_vm_type && correct_cpu && !isOverloaded && !isMigrating;
 }
 
 bool canAttachVM(MachineStatus* machine){
@@ -349,10 +361,10 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
     int currLowEfficiencyMachine = low_efficiency_machines.size() - 1;
     while(currLowEfficiencyMachine >= 0) {
         // Find the next high efficiency machine that is not full
-        while(currHighEfficiencyMachine < high_efficiency_machines.size() && high_efficiency_machines[currHighEfficiencyMachine]->vms.size() == MAX_VM_PER_MACHINE) {
+        while(currHighEfficiencyMachine < (int) high_efficiency_machines.size() && high_efficiency_machines[currHighEfficiencyMachine]->vms.size() == MAX_VM_PER_MACHINE) {
             currHighEfficiencyMachine++;
         }
-        if(currHighEfficiencyMachine >= high_efficiency_machines.size()) {
+        if(currHighEfficiencyMachine >= (int) high_efficiency_machines.size()) {
             break;
         }
 
@@ -408,5 +420,17 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
             currLowEfficiencyMachine--;
         }
     }
+}
+
+Time_t computeTaskRemainingRunTime(TaskId_t task_id, MachineId_t machine_id){
+    // Get task remaining instructions
+    TaskInfo_t task_info = GetTaskInfo(task_id);
+    uint64_t remainingInstructions = task_info.remaining_instructions;
+    // Get machine MIPS
+    MachineInfo_t machine_info = Machine_GetInfo(machine_id);
+    unsigned machineMIPS = machine_info.performance[0];
+    // Compute reminaing run time
+    Time_t remainingRunTime = remainingInstructions / machineMIPS;
+    return remainingRunTime;
 }
 

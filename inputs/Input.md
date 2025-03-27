@@ -26,9 +26,9 @@ machine class:
 task class:
 {
         Start time: 60000
-        End time : 800000
-        Inter arrival: 6000
-        Expected runtime: 2000000
+        End time : 20000000000
+        Inter arrival: 1000000000
+        Expected runtime: 3600000000
         Memory: 8
         VM type: LINUX
         GPU enabled: no
