@@ -5,8 +5,8 @@
 //  Created by ELMOOTAZBELLAH ELNOZAHY on 10/20/24.
 //
 
-#define MAX_TASKS_PER_VM 100
-#define MAX_VM_PER_MACHINE 100
+#define MAX_TASKS_PER_VM 10
+#define MAX_VM_PER_MACHINE 1000
 
 using namespace std;
 
@@ -379,7 +379,7 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
             // Search for a VM that is not in the process of migrating.
             while(idx >= 0) {
                 VMId_t candidate = le_machine->vms[idx];
-                if(!isVMMigrating[candidate]){
+                if(isMigratableVM(candidate)){
                     foundValid = true;
                     break;
                 }
@@ -422,15 +422,28 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
     }
 }
 
-Time_t computeTaskRemainingRunTime(TaskId_t task_id, MachineId_t machine_id){
-    // Get task remaining instructions
-    TaskInfo_t task_info = GetTaskInfo(task_id);
-    uint64_t remainingInstructions = task_info.remaining_instructions;
+Time_t computeVMRemainingRunTime(VMId_t vm_id){
+    // Get total active task remaining instructions
+    VMInfo_t vm_info = VM_GetInfo(vm_id);
+    uint64_t totalRemainingInstructions = 0;
+    for(TaskId_t task_id: vm_info.active_tasks){
+        TaskInfo_t task_info = GetTaskInfo(task_id);
+        totalRemainingInstructions += task_info.remaining_instructions;
+    }
     // Get machine MIPS
+    MachineId_t machine_id = vm_info.machine_id;
     MachineInfo_t machine_info = Machine_GetInfo(machine_id);
     unsigned machineMIPS = machine_info.performance[0];
     // Compute reminaing run time
-    Time_t remainingRunTime = remainingInstructions / machineMIPS;
+    Time_t remainingRunTime = totalRemainingInstructions / machineMIPS;
     return remainingRunTime;
+}
+
+bool isMigratableVM(VMId_t vm_id){
+    bool isCurrentlyMigrating = isVMMigrating[vm_id];
+    Time_t remainingRunTime = computeVMRemainingRunTime(vm_id);
+    Time_t fifteenMinutes = 15 * 60 * 1000000; // 15 minutes in microseconds
+    bool hasMoreThanFifteenMinutesOfTaskRunTimeLeft = remainingRunTime > fifteenMinutes;
+    return !isCurrentlyMigrating && hasMoreThanFifteenMinutesOfTaskRunTimeLeft;
 }
 

@@ -35,6 +35,8 @@ bool canRunTask(VMId_t vm, TaskId_t task_id);
 bool canAttachVM(MachineStatus* machine);
 void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType);
 Time_t computeTaskRemainingRunTime(TaskId_t task_id, MachineId_t machine_id);
+Time_t computeVMRemainingRunTime(VMId_t vm_id);
+bool isMigratableVM(VMId_t vm_id);
 
 
 #endif /* Scheduler_hpp */
