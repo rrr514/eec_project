@@ -1,3 +1,3 @@
 make scheduler
 make simulator
-./simulator inputs/test.md
+./simulator inputs/test2.md

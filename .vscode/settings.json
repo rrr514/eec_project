@@ -10,6 +10,7 @@
 		"unordered_set": "cpp",
 		"string_view": "cpp",
 		"initializer_list": "cpp",
-		"ranges": "cpp"
+		"ranges": "cpp",
+		"set": "cpp"
 	}
 }
