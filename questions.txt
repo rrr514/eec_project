@@ -24,3 +24,14 @@ Literature Algo:
 IEEE Papers (Can't access Maybe):
 -https://ieeexplore.ieee.org/document/7445250
 -https://ieeexplore.ieee.org/document/7581436
+
+
+E-Eco:
+Split machines up by CPU type - Each one should then be split into 3: Active, Standby, and Off
+-For ratio, split evenly (1/2 standby, 1/2 off - since none will be active at first)
+	-However, when active becomes 1/2 of standby, convert 1 off machine into standby
+		-On NewTask
+	-And then, when active is 1/3 of standby, convert 1 standby machine into off
+		-On TaskComplete
+-SLAVioation: Do nothing
+-Memory Warning: Do nothing? (Worry about later)
