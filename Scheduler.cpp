@@ -85,6 +85,7 @@ void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
 	SimOutput("Scheduler::MigrationComplete(): Migration of VM " + to_string(vm_id) + " completed at time " + to_string(time), 0);
 }
 
+// Entirely created by ChatGPT (Also very unnecessary but too central for my program to remove)
 double calculateTaskUtilization(TaskId_t task_id, MachineId_t machine_id) {
     // Get task info
     TaskInfo_t task_info = GetTaskInfo(task_id);
