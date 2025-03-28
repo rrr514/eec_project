@@ -37,6 +37,7 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType);
 Time_t computeTaskRemainingRunTime(TaskId_t task_id, MachineId_t machine_id);
 Time_t computeVMRemainingRunTime(VMId_t vm_id);
 bool isMigratableVM(VMId_t vm_id);
+MachineState_t get_machine_s_state(MachineId_t machine_id);
 
 
 #endif /* Scheduler_hpp */

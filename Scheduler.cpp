@@ -31,7 +31,12 @@ public:
         unsigned b_power = b_info.c_states[0];
         unsigned a_efficiency = a_mips / a_power;
         unsigned b_efficiency = b_mips / b_power;
+        MachineState_t a_state = a_info.s_state;
+        MachineState_t b_state = b_info.s_state;
 
+        if(a_state != b_state){
+            return a_state < b_state; // Lower state first.
+        }
         if (a_efficiency != b_efficiency)
             return a_efficiency > b_efficiency; // Most efficient first.
         if (a->vms.size() != b->vms.size())
@@ -44,6 +49,8 @@ public:
 // set<MachineStatus, Compare> machine_status;
 vector<MachineStatus*> machine_status;
 vector<bool> isVMMigrating;
+unsigned num_active_machines; // S0
+unsigned num_inactive_machines;
 
 void Scheduler::Init() {
     // Find the parameters of the clusters
@@ -58,38 +65,28 @@ void Scheduler::Init() {
     active_machines = Machine_GetTotal();
     SimOutput("Scheduler::Init(): Total number of active machines is " + to_string(active_machines), 3);
 
-    // for(unsigned i = 0;i < Machine_GetTotal();i++){
-    //     MachineInfo_t machine_info = Machine_GetInfo(MachineId_t(i));
-    //     SimOutput("Machine " + to_string(i) + " type: " + to_string(machine_info.cpu), 3);
-    //     SimOutput("Machine " + to_string(i) + " memory: " + to_string(machine_info.memory_size), 3);
-    //     SimOutput("Machine " + to_string(i) + " number of CPUs: " + to_string(machine_info.num_cpus), 3);
-    //     SimOutput("Machine " + to_string(i) + " has GPU: " + to_string(machine_info.gpus), 3);
-    // }
-
     SimOutput("Scheduler::Init(): Initializing scheduler", 1);
-    // for(unsigned i = 0; i < active_machines; i++)
-    //     vms.push_back(VM_Create(LINUX, X86));
     for(unsigned i = 0; i < active_machines; i++) {
         machines.push_back(MachineId_t(i));
         MachineStatus* machine = new MachineStatus();
         machine->id = MachineId_t(i);
         machine->vms = {};
         machine_status.push_back(machine);
-    }    
-    // for(unsigned i = 0; i < active_machines; i++) {
-    //     VM_Attach(vms[i], machines[i]);
+    }
+    
+    // // Turn off all machines
+    // for(MachineId_t machine: machines){
+    //     Machine_SetState(machine, S5);
     // }
 
-    // bool dynamic = false;
-    // if(dynamic)
-    //     for(unsigned i = 0; i<4 ; i++)
-    //         for(unsigned j = 0; j < 8; j++)
-    //             Machine_SetCorePerformance(MachineId_t(0), j, P3);
-    // Turn off the ARM machines
-    // for(unsigned i = 24; i < Machine_GetTotal(); i++)
-    //     Machine_SetState(MachineId_t(i), S5);
+    num_active_machines = Machine_GetTotal();
+    num_inactive_machines = 0;
 
-    // SimOutput("Scheduler::Init(): VM ids are " + to_string(vms[0]) + " ahd " + to_string(vms[1]), 3);
+    // // Print out all machine states
+    // for(MachineId_t machine: machines){
+    //     MachineInfo_t info = Machine_GetInfo(machine);
+    //     SimOutput("Machine " + to_string(machine) + " state: " + to_string(info.s_state), 3);
+    // }
 }
 
 void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
@@ -121,6 +118,15 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 
     // Sort machines by efficiency
     sort(machine_status.begin(), machine_status.end(), Compare());
+
+    // // Print out machine state, efficiency, utilization, and id
+    // for(MachineStatus* machine: machine_status){
+    //     MachineInfo_t info = Machine_GetInfo(machine->id);
+    //     SimOutput("Machine " + to_string(machine->id) + " state: " + to_string(info.s_state), 3);
+    //     SimOutput("Machine " + to_string(machine->id) + " efficiency: " + to_string(info.performance[0] / info.c_states[0]), 3);
+    //     SimOutput("Machine " + to_string(machine->id) + " utilization: " + to_string(machine->vms.size()), 3);
+    //     SimOutput("Machine " + to_string(machine->id) + " id: " + to_string(machine->id), 3);
+    // }
 
     // Look for a valid machine
     for(MachineStatus* machine: machine_status) {
@@ -293,7 +299,7 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // Do any bookkeeping necessary for the data structures
     // Decide if a machine is to be turned off, slowed down, or VMs to be migrated according to your policy
     // This is an opportunity to make any adjustments to optimize performance/energy
-    SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 3);
+    SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 2);
 
     SimOutput("Migrating ARM VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(ARM);
@@ -370,6 +376,7 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 
 void StateChangeComplete(Time_t time, MachineId_t machine_id) {
     // Called in response to an earlier request to change the state of a machine
+    SimOutput("StateChangeComplete(): State change of machine " + to_string(machine_id) + " completed at time " + to_string(time), 4);
 }
 
 bool canRunTask(VMId_t vm, TaskId_t task_id){
@@ -383,8 +390,10 @@ bool canRunTask(VMId_t vm, TaskId_t task_id){
 }
 
 bool canAttachVM(MachineStatus* machine){
+    MachineInfo_t machine_info = Machine_GetInfo(machine->id);
     bool isOverloaded = machine->vms.size() >= MAX_VM_PER_MACHINE;
-    return !isOverloaded;
+    bool enoughMemory = machine_info.memory_size - machine_info.memory_used > 8; // ~8 MBs needed per VM
+    return !isOverloaded && enoughMemory;
 }
 
 void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
@@ -449,8 +458,8 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
                 idx--;
             }
             if(!foundValid) {
-                SimOutput("No more VMs available to migrate on this machine.", 3);
-                break;  // No more VMs available to migrate on this machine.
+                SimOutput("No valid VMs available to migrate on this machine.", 3);
+                break; 
             }
 
             VMId_t vmToMigrate = le_machine->vms[idx];
@@ -510,3 +519,7 @@ bool isMigratableVM(VMId_t vm_id){
     return !isCurrentlyMigrating && hasMoreThanFifteenMinutesOfTaskRunTimeLeft;
 }
 
+MachineState_t get_machine_s_state(MachineId_t machine_id){
+    MachineInfo_t machine_info = Machine_GetInfo(machine_id);
+    return machine_info.s_state;
+}
