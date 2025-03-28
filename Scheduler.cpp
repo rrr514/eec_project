@@ -284,14 +284,19 @@ void Scheduler::Shutdown(Time_t time) {
     // Report about the total energy consumed
     // Report about the SLA compliance
     // Shutdown everything to be tidy :-)
-    for(auto & vm: vms) {
-        VM_Shutdown(vm);
-		vm_locations.erase(vm);
-    }
 
-	// Power down all machines
-	for(MachineId_t machine_id : machines) {
-		Machine_SetState(machine_id, S5);
+	// Shutdown all vms
+	for (const auto& pair : vm_locations) {
+		VMId_t vm_id = pair.first;
+		MachineId_t machine_id = pair.second;
+		// Shutdown the VM
+		VM_Shutdown(vm_id);
+		vm_locations.erase(vm_id); // Clean up the mapping
+	}
+    
+	// Power down all active machines
+	for (MachineId_t machine_id : active_machines_set) {
+		Machine_SetState(machine_id, S5); // Power down each active machine
 	}
 
 	// Report total energy consumed
