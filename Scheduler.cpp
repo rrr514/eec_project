@@ -11,7 +11,7 @@
 #include <queue>
 #include <set>
 
-#define MAX_NUM_TASKS_PER_VM 10
+#define MAX_NUM_TASKS_PER_VM 50
 #define MAX_NUM_VMS_PER_MACHINE 10
 
 // Implementation-specific types and data structures
@@ -23,6 +23,7 @@ namespace {
 	} MachineClassification_t;
 
 	struct MachineGroup {
+		long unsigned int total_machines;
 		set<MachineId_t> active;
 		set<MachineId_t> standby;
 		set<MachineId_t> off;
@@ -39,9 +40,14 @@ namespace {
 
 // TODO: Ensure you have a data structure to keep track of migrations
 
+// TODO: When waking up a machine from standby, ensure that we change its state before adding a vm/task to it
+
 void shiftMachine(MachineId_t machine_id, MachineClassification_t oldState, MachineClassification_t newState) {
 	CPUType_t cpuType = Machine_GetInfo(machine_id).cpu;
-	if (machineGroups.find(cpuType) == machineGroups.end()) return; // Machine group not found, return early
+	if (machineGroups.find(cpuType) == machineGroups.end()) {
+		SimOutput("shiftMachine(): CPU type " + to_string(cpuType) + " not found in machineGroups.", 0);
+		return; // Machine group not found, return early
+	}
 
 	MachineGroup & group = machineGroups[cpuType];
 	// Remove the machine from its old state group
@@ -56,24 +62,27 @@ void shiftMachine(MachineId_t machine_id, MachineClassification_t oldState, Mach
 			group.off.erase(machine_id);
 			break;
 	}
-
+	
+	group.classification[machine_id] = newState; // Update the classification of the machine in the group
 	// Add the machine to its new state group
+		// Will properly put into list once the state change is complete
 	switch (newState) {
 		case ACTIVE:
-			group.active.insert(machine_id);
+			// group.active.insert(machine_id);
 			Machine_SetState(machine_id, S0); // Ensure the machine state is set to ACTIVE
 			break;
 		case STANDBY:
-			group.standby.insert(machine_id);
+			// group.standby.insert(machine_id);
 			Machine_SetState(machine_id, S2); // Ensure the machine state is set to STANDBY
 			break;
 		case OFF:
-			group.off.insert(machine_id);
+			// group.off.insert(machine_id);
 			Machine_SetState(machine_id, S5); // Ensure the machine state is set to OFF
 			break;
+		default:
+			SimOutput("shiftMachine(): Unknown state for machine " + to_string(machine_id) + " with CPU type " + to_string(cpuType), 0);
+			break;
 	}
-	// Update the classification of the machine in the group
-	group.classification[machine_id] = newState;
 }
 
 void Scheduler::Init() {
@@ -88,16 +97,17 @@ void Scheduler::Init() {
             machineGroups[cpu] = MachineGroup();
         // Initially, put all machines into the "standby" tier.
         machineGroups[cpu].active.insert(m);
+		machineGroups[cpu].machine_to_vm[m] = vector<VMId_t>();
+		machineGroups[cpu].classification[m] = ACTIVE;
+		machineGroups[cpu].total_machines++;
     }
 
 	// For each CPU type group, split machines like so:
 		// 1/5 active, 2/5 standby, and 2/5 off
 	for (auto & pair : machineGroups) {
 		MachineGroup & group = pair.second;
-
-		size_t totalMachines = group.active.size();
-		size_t numStandby = (totalMachines * 2) / 5; // 2/5 standby
-		size_t numOff = numStandby; // Remaining are off
+		size_t numStandby = (group.total_machines * 2) / 5; // 2/5 standby
+		size_t numOff = numStandby; // 2/5 are off
 
 		// Move machines to their respective groups
 		while (numStandby > 0 && !group.active.empty()) {
@@ -159,8 +169,7 @@ bool addTaskToMachine(TaskId_t task_id, MachineId_t machine_id, MachineGroup &gr
 	group.task_to_vm[task_id] = vm_to_use;
 	group.task_to_machine[task_id] = machine_id;
 
-	SimOutput("addTaskToMachine(): Added task " + to_string(task_id) + " to VM " + to_string(vm_to_use) +
-		" on machine " + to_string(machine_id) + " with priority " + to_string(priority), 0);
+	// SimOutput("addTaskToMachine(): Added task " + to_string(task_id) + " to VM " + to_string(vm_to_use) + " on machine " + to_string(machine_id) + " with priority " + to_string(priority), 0);
 	
 	return true;
 }
@@ -173,17 +182,13 @@ bool addToActiveMachine(TaskId_t task_id, MachineGroup &group) {
 	}
 
 	// No active machines available – need to get a machine from standby if possible
-	for (MachineId_t machine_id : group.standby) {
-		if (addTaskToMachine(task_id, machine_id, group)) {
-			// If we successfully added the task to a standby machine, we need to shift it to active
-			shiftMachine(machine_id, STANDBY, ACTIVE);
-			return false; // Need to ensure we return false here to indicate that we did not add to an active machine – want to turn on an off machine
-		}
-	}
+		// Shift a machine from standby to active
+	if (!group.standby.empty())
+		shiftMachine(*group.standby.begin(), STANDBY, ACTIVE); // Shift the first machine in standby to active
 
 	// If we get here, should only happen because we're out of machines to put into standby – wait for next check
 	tasks_to_do.push_back(task_id);
-	SimOutput("addToActiveMachine(): No active machines available for task " + to_string(task_id) + ". Will retry later.", 0);
+	// SimOutput("addToActiveMachine(): No active machines available for task " + to_string(task_id) + ". Will retry later.", 0);
 	return false;
 }
 
@@ -263,16 +268,16 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
 		// Shutdown the VM
 		VM_Shutdown(vm_id);
 
-		// Check if the machine can be moved to standby
-		if (group.machine_to_vm[machine_id].empty()) {
-			if (!group.standby.empty()) { // Move one machine from standby to off
+		// Check if the machine can be moved to standby + Ensure active machines are still 1/5 of the entire thing
+		if (group.machine_to_vm[machine_id].empty() && group.active.size() > (group.total_machines / 5)) {
+			if (group.active.size() > (2 * group.total_machines / 5)) { // Move one machine from standby to off
 				MachineId_t standby_machine_id = *group.standby.begin();
 				shiftMachine(standby_machine_id, STANDBY, OFF);
 			}
 			shiftMachine(machine_id, ACTIVE, STANDBY); // Move to standby
 		}
 	}
-	// SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
+	SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
 }
 
 // Public interface below
@@ -339,4 +344,27 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 void StateChangeComplete(Time_t time, MachineId_t machine_id) {
     // Called in response to an earlier request to change the state of a machine
 	// SimOutput("StateChangeComplete(): Machine " + to_string(machine_id) + " has completed state change at time " + to_string(time) + " to state " + to_string(Machine_GetInfo(machine_id).s_state), 0);
+
+	// Add to new set based on the new state of the machine
+	CPUType_t req_cpu = Machine_GetInfo(machine_id).cpu;
+	auto it = machineGroups.find(req_cpu);
+	if (it == machineGroups.end()) {
+		SimOutput("StateChangeComplete(): CPU type " + to_string(req_cpu) + " not found in machineGroups.", 0);
+		return; // Machine group not found, return early
+	}
+	MachineGroup & group = it->second;
+	switch (group.classification[machine_id]) {
+		case ACTIVE:
+			group.active.insert(machine_id);
+			break;
+		case STANDBY:
+			group.standby.insert(machine_id);
+			break;
+		case OFF:
+			group.off.insert(machine_id);
+			break;
+		default:
+			SimOutput("StateChangeComplete(): Unknown state for machine " + to_string(machine_id) + " with CPU type " + to_string(req_cpu), 0);
+			break; // Do nothing for other states
+	}
 }
