@@ -35,7 +35,7 @@ namespace {
 
 	// Global map from CPU type to the corresponding MachineGroup.
 	static map<CPUType_t, MachineGroup> machineGroups;
-	vector<TaskId_t> tasks_to_do;
+	queue<TaskId_t> tasks_to_do;
 }
 
 // TODO: Ensure you have a data structure to keep track of migrations
@@ -187,7 +187,7 @@ bool addToActiveMachine(TaskId_t task_id, MachineGroup &group) {
 		shiftMachine(*group.standby.begin(), STANDBY, ACTIVE); // Shift the first machine in standby to active
 
 	// If we get here, should only happen because we're out of machines to put into standby – wait for next check
-	tasks_to_do.push_back(task_id);
+	tasks_to_do.push(task_id);
 	// SimOutput("addToActiveMachine(): No active machines available for task " + to_string(task_id) + ". Will retry later.", 0);
 	return false;
 }
@@ -214,9 +214,13 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 void Scheduler::PeriodicCheck(Time_t now) {
 	// SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
 
-	for (TaskId_t task_id : tasks_to_do)
-		// Try to re-add the task to the active machines
+	int n = tasks_to_do.size();
+	for (int i = 0; i < n; i++) {
+		TaskId_t task_id = tasks_to_do.front();
+		tasks_to_do.pop();
+		// SimOutput("Scheduler::PeriodicCheck(): Task " + to_string(task_id) + " is pending.", 0);
 		NewTask(now, task_id);
+	}
 }
 
 void Scheduler::Shutdown(Time_t time) {
