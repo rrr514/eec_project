@@ -25,6 +25,7 @@ namespace {
     map<MachineId_t, MachineStatus> machine_status;
     map<TaskId_t, pair<VMId_t, MachineId_t>> task_locations;
 	map<VMId_t, MachineId_t> vm_locations;
+	set<VMId_t> vms_to_migrate;
 
 	struct MachineUtilizationComparator {
 		bool operator()(const MachineId_t& a, const MachineId_t& b) const {
@@ -79,12 +80,6 @@ void Scheduler::Init() {
     }
 }
 
-// When VM is finished moving into new machine
-void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
-	machine_status[vm_locations[vm_id]].tasks_being_migrated_to = false;
-	SimOutput("Scheduler::MigrationComplete(): Migration of VM " + to_string(vm_id) + " completed at time " + to_string(time), 0);
-}
-
 // Entirely created by ChatGPT (Also very unnecessary but too central for my program to remove)
 double calculateTaskUtilization(TaskId_t task_id, MachineId_t machine_id) {
     // Get task info
@@ -104,6 +99,29 @@ double calculateTaskUtilization(TaskId_t task_id, MachineId_t machine_id) {
     // Utilization is the fraction of the machine's capacity needed by this task
     double taskInstructionsPerSec = taskInstructions / expectedRuntimeSec;
     return taskInstructionsPerSec / machineInstructionsPerSec;
+}
+
+// When VM is finished moving into new machine
+void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
+	vms_to_migrate.erase(vm_id);
+
+	if (VM_GetInfo(vm_id).active_tasks.empty()) {
+		SimOutput("Scheduler::MigrationComplete(): VM " + to_string(vm_id) + " has no tasks, shutting down", 0);
+		VM_Shutdown(vm_id);
+		vm_locations.erase(vm_id); // Clean up the mapping
+		return;
+	}
+
+	MachineId_t target_machine = vm_locations[vm_id];
+	// Update Target machine status
+	machine_status[target_machine].tasks_being_migrated_to = false;
+	machine_status[target_machine].vms.push_back(vm_id);
+	for (TaskId_t task_id : VM_GetInfo(vm_id).active_tasks) {
+		machine_status[target_machine].tasks.push_back(task_id);
+		machine_status[target_machine].utilization += calculateTaskUtilization(task_id, target_machine);
+		task_locations[task_id] = {vm_id, target_machine};
+	}
+	SimOutput("Scheduler::MigrationComplete(): Migration of VM " + to_string(vm_id) + " completed at time " + to_string(time), 0);
 }
 
 bool powerDownActiveMachine(MachineId_t machine_id) {
@@ -223,7 +241,8 @@ bool removeTaskOverheadFromMachine(TaskId_t task_id, bool manuallyRemoveTask = f
 		if (manuallyRemoveTask) VM_RemoveTask(vm_id, task_id);
 
 		// Remove the VM if it has no tasks left
-		if (VM_GetInfo(vm_id).active_tasks.empty()) {
+		if (VM_GetInfo(vm_id).active_tasks.empty() && !vms_to_migrate.count(vm_id)) {
+			SimOutput("Removing VM " + to_string(vm_id) + " from machine " + to_string(machine_id), 0);
 			VM_Shutdown(vm_id);
 			vm_locations.erase(vm_id);
 			machine_status[machine_id].vms.erase(std::remove(machine_status[machine_id].vms.begin(), 
@@ -240,7 +259,8 @@ bool removeTaskOverheadFromMachine(TaskId_t task_id, bool manuallyRemoveTask = f
 		return true;
 	}
 	else {
-		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+		// SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+		// Most likely a task on a VM that was being migrated – not an active task anyway
 		return false;
 	}
 }
@@ -288,7 +308,7 @@ void Scheduler::Shutdown(Time_t time) {
 	// Shutdown all vms
 	for (const auto& pair : vm_locations) {
 		VMId_t vm_id = pair.first;
-		MachineId_t machine_id = pair.second;
+		// MachineId_t machine_id = pair.second;
 		// Shutdown the VM
 		VM_Shutdown(vm_id);
 		vm_locations.erase(vm_id); // Clean up the mapping
@@ -334,7 +354,6 @@ bool migrateVMToNewMachine(VMId_t vm_id, MachineId_t source_machine, Utilization
 																machine_status[source_machine].vms.end(), 
 																vm_id), 
 													machine_status[source_machine].vms.end());
-			machine_status[target_machine].vms.push_back(vm_id);
 			for (TaskId_t task_id : vm_info.active_tasks) {
 				// Update source
 				machine_status[source_machine].tasks.erase(std::remove(machine_status[source_machine].tasks.begin(), 
@@ -343,14 +362,14 @@ bool migrateVMToNewMachine(VMId_t vm_id, MachineId_t source_machine, Utilization
 										machine_status[source_machine].tasks.end());
 				machine_status[source_machine].utilization -= calculateTaskUtilization(task_id, source_machine);
 				if (machine_status[source_machine].utilization < 0.0) machine_status[source_machine].utilization = 0.0;
-				// Update target
-				machine_status[target_machine].tasks.push_back(task_id);
-				machine_status[target_machine].utilization += calculateTaskUtilization(task_id, target_machine);
-				task_locations[task_id] = {vm_id, target_machine};
+				task_locations.erase(task_id); // Remove task location
 			}
 			machine_status[target_machine].tasks_being_migrated_to = true; // Should not turn off machine
-			VM_Migrate(vm_id, target_machine);
+			vm_locations[vm_id] = target_machine; // Update VM location
+			vms_to_migrate.insert(vm_id); // Mark VM for migration
+			// Will update target overhead once VM is there
 			SimOutput("Migrating VM " + to_string(vm_id) + " from machine " + to_string(source_machine) + " to machine " + to_string(target_machine), 0);
+			VM_Migrate(vm_id, target_machine);
 			return true;
 		}
 	}
@@ -496,6 +515,12 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	// 5. Update the VM status if necessary
 
 	SimOutput("SLAWarning(): SLA violation detected for task " + to_string(task_id), 0);
+
+	if (task_locations.find(task_id) == task_locations.end()) {
+		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+		// Most likely a task on a VM that was being migrated – meaning we've already solved it anyway
+		return;
+	}
 
 	// 1. Get the VM of this task to migrate
 	VMId_t vm_id = task_locations[task_id].first;
