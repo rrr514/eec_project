@@ -212,7 +212,7 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 }
 
 void Scheduler::PeriodicCheck(Time_t now) {
-	// SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
+	SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
 
 	int n = tasks_to_do.size();
 	for (int i = 0; i < n; i++) {
