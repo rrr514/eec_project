@@ -38,6 +38,8 @@ Time_t computeTaskRemainingRunTime(TaskId_t task_id, MachineId_t machine_id);
 Time_t computeVMRemainingRunTime(VMId_t vm_id);
 bool isMigratableVM(VMId_t vm_id);
 MachineState_t get_machine_s_state(MachineId_t machine_id);
-
+bool addTaskToMachine(MachineStatus* machine, TaskId_t task_id, Priority_t priority, VMType_t task_required_vm_type, CPUType_t task_required_cpu, Time_t now);
+bool scheduleNewTask(CPUType_t task_required_cpu, VMType_t task_required_vm_type, TaskId_t task_id, Priority_t priority, Time_t now, unsigned task_required_memory);
+void scheduleMissedTasks(Time_t now);
 
 #endif /* Scheduler_hpp */

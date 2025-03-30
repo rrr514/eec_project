@@ -1,3 +1,3 @@
 make scheduler
 make simulator
-./simulator -v 2 inputs/GentlerHour.md > output.txt
+./simulator -v 3 inputs/test.md > output.txt
