@@ -212,7 +212,7 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 }
 
 void Scheduler::PeriodicCheck(Time_t now) {
-	SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
+	// SimOutput("Scheduler::PeriodicCheck(): Periodic check at time " + to_string(now), 0);
 
 	int n = tasks_to_do.size();
 	for (int i = 0; i < n; i++) {
@@ -221,6 +221,23 @@ void Scheduler::PeriodicCheck(Time_t now) {
 		// SimOutput("Scheduler::PeriodicCheck(): Task " + to_string(task_id) + " is pending.", 0);
 		NewTask(now, task_id);
 	}
+
+	// Loop through all VMs and check if they have tasks
+	// for (auto & pair : machineGroups) {
+	// 	MachineGroup & group = pair.second;
+	// 	for (auto & pair: group.machine_to_vm) {
+	// 		MachineId_t machine_id = pair.first;
+	// 		vector<VMId_t> &vms = pair.second;
+
+	// 		for (VMId_t vm_id : vms) {
+	// 			// Check if the VM has any tasks
+	// 			if (VM_GetInfo(vm_id).active_tasks.size() != 0) {
+	// 				SimOutput("Scheduler::PeriodicCheck(): VM " + to_string(vm_id) + " on machine " + to_string(machine_id) + " has tasks.", 0);
+	// 				return;
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 void Scheduler::Shutdown(Time_t time) {
@@ -274,7 +291,7 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
 
 		// Check if the machine can be moved to standby + Ensure active machines are still 1/5 of the entire thing
 		if (group.machine_to_vm[machine_id].empty() && group.active.size() > (group.total_machines / 5)) {
-			if (group.active.size() > (2 * group.total_machines / 5)) { // Move one machine from standby to off
+			if (group.standby.size() > (2 * group.total_machines / 5)) { // Move one machine from standby to off
 				MachineId_t standby_machine_id = *group.standby.begin();
 				shiftMachine(standby_machine_id, STANDBY, OFF);
 			}

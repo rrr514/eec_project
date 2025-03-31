@@ -1,3 +1,3 @@
 make scheduler
 make simulator
-./simulator inputs/bigsmall.md
+./simulator inputs/Day.md
