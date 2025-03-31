@@ -1,0 +1,10 @@
+Scheduler::TaskComplete(): Consolidating machines for CPU type 3 at time 4118720958
+Scheduler::TaskComplete(): Consolidating machines for CPU type 3 at time 7417672053
+Scheduler::TaskComplete(): Consolidating machines for CPU type 3 at time 8483855626
+Scheduler::TaskComplete(): Consolidating machines for CPU type 3 at time 8710512056
+SLA violation report
+SLA0: 97.4538%
+SLA1: 96.3415%
+SLA2: 0%
+Total Energy 0.803054KW-Hour
+Simulation run finished in 8729.88 seconds

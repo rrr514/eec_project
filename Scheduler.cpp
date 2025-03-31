@@ -154,7 +154,7 @@ void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
 }
 
 bool powerDownActiveMachine(MachineId_t machine_id) {
-	return false;
+	// return false;
 
 	// SimOutput("Scheduler::powerDownActiveMachine(): Checking machine " + to_string(machine_id) + " for power down", 0);
 
@@ -163,7 +163,7 @@ bool powerDownActiveMachine(MachineId_t machine_id) {
 	MachineInfo_t info = Machine_GetInfo(machine_id);
 	if (info.active_tasks == 0 && !machine_status[machine_id].tasks_being_migrated_to
 		&& active_machines_map[info.cpu].size() > (count_map[info.cpu] / 5)) {
-		SimOutput("Scheduler::powerDownActiveMachine(): Powering down machine " + to_string(machine_id), 0);
+		// SimOutput("Scheduler::powerDownActiveMachine(): Powering down machine " + to_string(machine_id), 0);
 		Machine_SetState(machine_id, S5);
 		machine_status[machine_id].utilization = 0.0;
 		machine_status[machine_id].tasks.clear();
@@ -301,7 +301,7 @@ bool removeTaskOverheadFromMachine(TaskId_t task_id) {
 
 		// Remove the VM if it has no tasks left
 		if (VM_GetInfo(vm_id).active_tasks.empty() && !vms_to_migrate.count(vm_id)) {
-			SimOutput("Shutting down VM " + to_string(vm_id) + " from machine " + to_string(machine_id), 0);
+			// SimOutput("Shutting down VM " + to_string(vm_id) + " from machine " + to_string(machine_id), 0);
 			VM_Shutdown(vm_id);
 			vm_locations.erase(vm_id);
 			bool overloaded = machine_status[machine_id].overloaded_vms.count(vm_id);
@@ -324,7 +324,7 @@ bool removeTaskOverheadFromMachine(TaskId_t task_id) {
 }
 
 void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
-	SimOutput("Scheduler::NewTask(): Received new task " + to_string(task_id) + " at time " + to_string(now), 0);
+	// SimOutput("Scheduler::NewTask(): Received new task " + to_string(task_id) + " at time " + to_string(now), 0);
 
 	// Try to find an active machine first (for faster allocation)
 	CPUType_t required_cpu = RequiredCPUType(task_id);
@@ -509,7 +509,7 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
         for (const auto& pair : active_machines_map) {
 			CPUType_t cpu_type = pair.first;
 
-			SimOutput("Scheduler::TaskComplete(): Consolidating machines for CPU type " + to_string(cpu_type) + " at time " + to_string(now), 0);
+			// SimOutput("Scheduler::TaskComplete(): Consolidating machines for CPU type " + to_string(cpu_type) + " at time " + to_string(now), 0);
 
 			// Consolidate machines for this CPU type
 			// consolidateMachines(cpu_type);
@@ -517,7 +517,7 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
 		completed_tasks = 0;
     }
     
-	SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
+	// SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
 
 	// Check if any machine still has a task left to complete
 	// for (const auto& pair : active_machines_map) {
