@@ -1,6 +1,6 @@
 make scheduler
 make simulator
-./simulator inputs/Day.md > "log.txt"
+./simulator inputs/bigsmall.md > "log.txt"
 # Check if the output file is created
 if [ -f "log.txt" ]; then
 	echo "Output file created successfully."

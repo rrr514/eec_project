@@ -135,7 +135,7 @@ void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
 	vms_to_migrate.erase(vm_id);
 
 	if (VM_GetInfo(vm_id).active_tasks.empty()) {
-		SimOutput("Scheduler::MigrationComplete(): VM " + to_string(vm_id) + " has no tasks, shutting down", 0);
+		// SimOutput("Scheduler::MigrationComplete(): VM " + to_string(vm_id) + " has no tasks, shutting down", 0);
 		VM_Shutdown(vm_id);
 		vm_locations.erase(vm_id); // Clean up the mapping
 		return;
@@ -154,12 +154,9 @@ void Scheduler::MigrationComplete(Time_t time, VMId_t vm_id) {
 }
 
 bool powerDownActiveMachine(MachineId_t machine_id) {
-	// return false;
-
 	// SimOutput("Scheduler::powerDownActiveMachine(): Checking machine " + to_string(machine_id) + " for power down", 0);
 
-	// Power down the machine if it has no tasks
-		//  && !machine_status[machine_id].changing_state is not working!
+	// Only power down the machine if it has no tasks
 	MachineInfo_t info = Machine_GetInfo(machine_id);
 	if (info.active_tasks == 0 && !machine_status[machine_id].tasks_being_migrated_to
 		&& active_machines_map[info.cpu].size() > (count_map[info.cpu] / 5)) {
@@ -177,7 +174,6 @@ bool powerDownActiveMachine(MachineId_t machine_id) {
 
 // Assumes task isn't on any other machine + needs a vm to run it
 bool addTaskToMachine(TaskId_t task_id, MachineId_t machine_id) {
-	// if (machine_status[machine_id].changing_state) return false; // Machine is currently changing state
 	// if (machine_status[machine_id].tasks_being_migrated_to) return false; // Machine is currently being migrated to
 
 	// Find whether machine can support task
@@ -240,7 +236,7 @@ bool overloadTaskToMachine(TaskId_t task_id, MachineId_t machine_id, bool curren
 	CPUType_t required_cpu = RequiredCPUType(task_id);
 	if (info.cpu != required_cpu) return false;
 	VMType_t required_vm = RequiredVMType(task_id);
-	unsigned memory = GetTaskMemory(task_id);
+	// unsigned memory = GetTaskMemory(task_id);
 
 	double new_utilization = machine_status[machine_id].utilization + calculateTaskUtilization(task_id, machine_id);
 	active_machines_map[info.cpu].erase(machine_id);
@@ -318,7 +314,7 @@ bool removeTaskOverheadFromMachine(TaskId_t task_id) {
 		}
 		return true;
 	}
-	// SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+	SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 3);
 	// Most likely a task on a VM that was being migrated – not an active task anyway
 	return false;
 }
@@ -353,7 +349,7 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 		// SimOutput("Overloading active machine " + to_string(machine_id) + " for task " + to_string(task_id), 0);
 		if (overloadTaskToMachine(task_id, machine_id, true)) return;
 	}
-	SimOutput("WARNING: Did not schedule task " + to_string(task_id), 0);
+	SimOutput("WARNING: Did not schedule task " + to_string(task_id), 1);
 }
 
 void Scheduler::PeriodicCheck(Time_t now) {
@@ -467,10 +463,6 @@ void consolidateMachines(CPUType_t cpu_type) {
     // For each low utilization machine, try to migrate tasks to higher utilization machines
     for (size_t i = 0; i < sortedMachines.size(); i++) {
         MachineId_t source_machine = sortedMachines[i];
-		// if (machine_status[source_machine].changing_state == true) {
-		// 	// SimOutput("Machine " + to_string(source_machine) + " is currently changing state", 0);
-		// 	continue;
-		// }
         
         // Skip if machine is already empty
 		MachineInfo_t info = Machine_GetInfo(source_machine);
@@ -512,24 +504,12 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
 			// SimOutput("Scheduler::TaskComplete(): Consolidating machines for CPU type " + to_string(cpu_type) + " at time " + to_string(now), 0);
 
 			// Consolidate machines for this CPU type
-			// consolidateMachines(cpu_type);
+			consolidateMachines(cpu_type);
 		}
 		completed_tasks = 0;
     }
     
 	// SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
-
-	// Check if any machine still has a task left to complete
-	// for (const auto& pair : active_machines_map) {
-	// 	// CPUType_t cpu_type = pair.first;
-	// 	const set<MachineId_t, MachineUtilizationComparator>& machines = pair.second;
-
-	// 	for (MachineId_t machine_id : machines) {
-	// 		if (!machine_status[machine_id].tasks.empty()) {
-	// 			SimOutput("Scheduler::TaskComplete(): Machine " + to_string(machine_id) + " still has tasks left", 0);
-	// 		}
-	// 	}
-	// }
 }
 
 // Public interface below
@@ -555,6 +535,12 @@ void MemoryWarning(Time_t time, MachineId_t machine_id) {
     // The simulator is alerting you that machine identified by machine_id is overcommitted
     SimOutput("MemoryWarning(): Overflow at " + to_string(machine_id) + " was detected at time " + to_string(time), 4);
 
+	// If this machine is already overloaded, we don't need to do anything
+	if (overloaded_machines_map[Machine_GetCPUType(machine_id)].count(machine_id)) {
+		SimOutput("WARNING: Machine " + to_string(machine_id) + " is already overloaded", 4);
+		return;
+	}
+
 	// 1. Find VM with greatest memory usage
 	unsigned best_vm_memory = 0;
 	VMId_t best_vm_id = -1;
@@ -570,12 +556,12 @@ void MemoryWarning(Time_t time, MachineId_t machine_id) {
 		}
 	}
 	if (best_vm_memory == 0) {
-		SimOutput("WARNING: No VMs found on machine " + to_string(machine_id), 0);
+		SimOutput("WARNING: No VMs found on machine " + to_string(machine_id), 1);
 		return;
 	}
 
 	// 2. Migrate tasks from VM to other machines
-	// migrateVMToNewMachine(best_vm_id, machine_id);
+	migrateVMToNewMachine(best_vm_id, machine_id);
 }
 
 void MigrationDone(Time_t time, VMId_t vm_id) {
@@ -615,7 +601,7 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	SimOutput("SLAWarning(): SLA violation detected for task " + to_string(task_id) + " at time " + to_string(time), 4);
 
 	if (task_locations.find(task_id) == task_locations.end()) {
-		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 0);
+		SimOutput("WARNING: Task " + to_string(task_id) + " not found in task locations", 3);
 		// Most likely a task on a VM that was being migrated – meaning we've already solved it anyway
 		return;
 	}
@@ -624,10 +610,15 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	VMId_t vm_id = task_locations[task_id].first;
 	MachineId_t machine_id = task_locations[task_id].second;
 
+	if (overloaded_machines_map[Machine_GetCPUType(machine_id)].count(machine_id)) {
+		SimOutput("WARNING: Machine " + to_string(machine_id) + " is already overloaded", 4);
+		return;
+	}
+
 	// 2. Migrate the VM to another machine
-	// if (!migrateVMToNewMachine(vm_id, machine_id, GO_LOWER)) {
-	// 	SimOutput("WARNING: Could not migrate VM " + to_string(vm_id) + " from machine " + to_string(machine_id), 0);
-	// }
+	if (!migrateVMToNewMachine(vm_id, machine_id, GO_LOWER)) {
+		SimOutput("WARNING: Could not migrate VM " + to_string(vm_id) + " from machine " + to_string(machine_id), 2);
+	}
 }
 
 void StateChangeComplete(Time_t time, MachineId_t machine_id) {
