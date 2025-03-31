@@ -6,7 +6,7 @@
 //
 
 #define MAX_TASKS_PER_VM 10
-#define MAX_VM_PER_MACHINE 100
+#define MAX_VM_PER_MACHINE 10
 
 using namespace std;
 
@@ -15,9 +15,9 @@ using namespace std;
 #include <algorithm>
 #include <cassert>
 #include <queue>
+#include <unordered_map>
 
 static bool migrating = false;
-
 class Compare {
 public:
     bool operator() (const MachineStatus* a, const MachineStatus* b) const {
@@ -45,17 +45,15 @@ public:
     }
 };
 
-// List of servers sorted by their energy efficiency, most efficient to least efficient
-// set<MachineStatus, Compare> machine_status;
-vector<MachineStatus*> machine_status;
+set<MachineStatus*, Compare> machine_status;
 vector<bool> isVMMigrating;
 vector<bool> isMachineChangingState;
 // static unsigned num_active_machines; // S0
 // static unsigned num_inactive_machines;
 unsigned total_machines;
 queue<TaskId_t> missed_tasks;
-unsigned numCycles = 0;
-set<MachineStatus*, Compare> running_machines;
+uint64_t numCycles = 0;
+unordered_map<MachineId_t, Time_t> machine_standby_time;
 
 void Scheduler::Init() {
     // Find the parameters of the clusters
@@ -74,9 +72,10 @@ void Scheduler::Init() {
         MachineStatus* machine = new MachineStatus();
         machine->id = MachineId_t(i);
         machine->vms = {};
-        machine_status.push_back(machine);
+        // Originally: machine_status.push_back(machine);
+        // Now, insert into the ordered set.
+        machine_status.insert(machine);
         isMachineChangingState.push_back(false);
-        running_machines.insert(machine);
     }
 
     // Print out machines
@@ -114,12 +113,13 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
     // Decide to attach the task to an existing VM, 
     //      vm.AddTask(taskid, Priority_T priority); or
 
-    // Intiailize all tasks with low priority
-	Priority_t priority = LOW_PRIORITY;
+    // Initialize all tasks with low priority
+    Priority_t priority = LOW_PRIORITY;
 
-    // Sort machines by efficiency
-    sort(machine_status.begin(), machine_status.end(), Compare());
-    
+    // Originally: sort(machine_status.begin(), machine_status.end(), Compare());
+    // Since machine_status is an ordered set, sorting is unnecessary.
+    // (The sort call is preserved here as a comment.)
+    // sort(machine_status.begin(), machine_status.end(), Compare());
 
     // Print out machine state, efficiency, utilization, and id
     // for(MachineStatus* machine: machine_status){
@@ -134,9 +134,9 @@ void Scheduler::NewTask(Time_t now, TaskId_t task_id) {
 
     // No more machines to wake up --> add to missed task queue
     if(!success){
-        SimOutput("Task missed at " + to_string(now), 3);
+        // SimOutput("Task missed at " + to_string(now), 3);
         missed_tasks.push(task_id);
-        SimOutput("Task " + to_string(task_id) + " is added to the missed task queue", 3);
+        // SimOutput("Task " + to_string(task_id) + " is added to the missed task queue", 3);
     }
 
     scheduleMissedTasks(now);
@@ -154,10 +154,9 @@ void Scheduler::PeriodicCheck(Time_t now) {
     // 1. If a task has less than 20% of its run time left, set priority to high
     // 2. If a task has less than 50% of its run time left, set priority to mid
     // 3. If a task has more than 50% of its run time left, set priority to low
-    // A better way to assign priorities would probably be to use a combination of remaining instructions and time left, but this is simpler.
     double high_priority_threshold = 0.2;
     double mid_priority_threshold = 0.5;
-    for(MachineStatus* machine : machine_status){
+    for(auto machine : machine_status) {
         for(VMId_t vm: machine->vms){
             VMInfo_t vm_info = VM_GetInfo(vm);
             for(TaskId_t task: vm_info.active_tasks){
@@ -179,7 +178,6 @@ void Scheduler::PeriodicCheck(Time_t now) {
         }
     }
 
-
     // This priority setting scheme more complicated and doesn't work as well for (SpikeyMean and MatchMeIfYouCan and BigSmall)
     // Works better on TallShort though
 
@@ -189,7 +187,7 @@ void Scheduler::PeriodicCheck(Time_t now) {
     // 1. If pc < pt or has already violated SLA, set priority to high
     // 2. If pc > pt, set priority to mid
     // 3. If task is SLA3, set priority to low
-    // for(MachineStatus* machine : machine_status){
+    // for(auto machine : machine_status){
     //     for(VMId_t vm: machine->vms){
     //         VMInfo_t vm_info = VM_GetInfo(vm);
     //         for(TaskId_t task: vm_info.active_tasks){
@@ -214,14 +212,13 @@ void Scheduler::PeriodicCheck(Time_t now) {
     //     }
     // }
 
-
     // Try to schedule missed tasks if possible
     scheduleMissedTasks(now);
 
     // Attempt to lower the frequency of the machines
     if(missed_tasks.empty()){
-        SimOutput("No missed tasks, attempting to lower frequency of machines", 3);
-        for(MachineStatus* machine: machine_status){
+        // SimOutput("No missed tasks, attempting to lower frequency of machines", 3);
+        for(auto machine : machine_status){
             MachineInfo_t info = Machine_GetInfo(machine->id);
             if(isMachineChangingState[machine->id]) continue;
             if(get_machine_s_state(machine->id) != S0) continue;
@@ -234,7 +231,20 @@ void Scheduler::PeriodicCheck(Time_t now) {
         assert(missed_tasks.size() > 0);
     }
 
-    
+    // If on standby for more than 5 minutes, turn off the machine
+    for(auto machine : machine_status){
+        MachineInfo_t info = Machine_GetInfo(machine->id);
+        if(info.s_state == S1 && isMachineChangingState[machine->id] == false){
+            assert(info.active_tasks == 0);
+            assert(info.active_vms == 0);
+            Time_t time_on_standby = now - machine_standby_time[machine->id];
+            if(time_on_standby > 300000000){
+                // SimOutput("Turning off machine " + to_string(machine->id) + " at " + to_string(now), 3);
+                isMachineChangingState[machine->id] = true;
+                Machine_SetState(machine->id, S5);
+            }
+        }
+    }
 }
 
 void Scheduler::Shutdown(Time_t time) {
@@ -247,6 +257,7 @@ void Scheduler::Shutdown(Time_t time) {
     }
     SimOutput("SimulationComplete(): Finished!", 4);
     SimOutput("SimulationComplete(): Time is " + to_string(time), 4);
+    // Scheduler.Shutdown(time);
 }
 
 void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
@@ -255,38 +266,36 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
     // This is an opportunity to make any adjustments to optimize performance/energy
     SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " is complete at " + to_string(now), 2);
 
-    SimOutput("Migrating ARM VMs to higher efficiency machines", 4);
+    // SimOutput("Migrating ARM VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(ARM);
-    SimOutput("Successfully migrated ARM VMs to higher efficiency machines", 4);
-    SimOutput("Migrating X86 VMs to higher efficiency machines", 4);
+    // SimOutput("Successfully migrated ARM VMs to higher efficiency machines", 4);
+    // SimOutput("Migrating X86 VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(X86);
-    SimOutput("Successfully migrated X86 VMs to higher efficiency machines", 4);
-    SimOutput("Migrating POWER VMs to higher efficiency machines", 4);
+    // SimOutput("Successfully migrated X86 VMs to higher efficiency machines", 4);
+    // SimOutput("Migrating POWER VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(POWER);
-    SimOutput("Successfully migrated POWER VMs to higher efficiency machines", 4);
-    SimOutput("Migrating RISCV VMs to higher efficiency machines", 4);
+    // SimOutput("Successfully migrated POWER VMs to higher efficiency machines", 4);
+    // SimOutput("Migrating RISCV VMs to higher efficiency machines", 4);
     migrateVMsToHigherEfficiencyMachines(RISCV);
-    SimOutput("Successfully migrated RISCV VMs to higher efficiency machines", 4);
+    // SimOutput("Successfully migrated RISCV VMs to higher efficiency machines", 4);
 
-    // Turn off unused machines
-    for(MachineStatus* machine: machine_status){
+    // Set unused machines on standby
+    for(auto machine : machine_status){
         MachineInfo_t info = Machine_GetInfo(machine->id);
-        if(info.s_state == S0 && machine->vms.size() == 0 && isMachineChangingState[machine->id] == false){
+        if(info.s_state == S0 && machine->vms.empty() && isMachineChangingState[machine->id] == false){
             assert(info.active_tasks == 0);
             assert(info.active_vms == 0);
             isMachineChangingState[machine->id] = true;
             // num_active_machines--;
             // num_inactive_machines++;
-            SimOutput("Turning off machine " + to_string(machine->id) + " at " + to_string(now), 3);
-            assert(running_machines.find(machine) != running_machines.end());
-            running_machines.erase(machine);
-            Machine_SetState(machine->id, S5);
+            // SimOutput("Turning off machine " + to_string(machine->id) + " at " + to_string(now), 3);
+            machine_standby_time[machine->id] = now;
+            Machine_SetState(machine->id, S1);
         }
     }
 }
 
 // Public interface below
-
 static Scheduler Scheduler;
 
 void InitScheduler() {
@@ -341,7 +350,7 @@ void SimulationComplete(Time_t time) {
 }
 
 void SLAWarning(Time_t time, TaskId_t task_id) {
-    
+    // Implement SLA warning logic here, if needed.
 }
 
 void StateChangeComplete(Time_t time, MachineId_t machine_id) {
@@ -369,15 +378,20 @@ bool canAttachVM(MachineStatus* machine){
 }
 
 void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
-    // Sort machines by efficiency
-    sort(machine_status.begin(), machine_status.end(), Compare());
+    // Because machine_status is a set, we first copy it to a vector to allow indexing and sort.
+    vector<MachineStatus*> machineVec;
+    for(auto m : machine_status) {
+        machineVec.push_back(m);
+    }
+    // Sort the temporary vector using the Compare class.
+    sort(machineVec.begin(), machineVec.end(), Compare());
 
     // Divide servers into two halves based on utilization AND machine efficiency
     vector<MachineStatus*> low_efficiency_machines;
     vector<MachineStatus*> high_efficiency_machines;
 
     unsigned numMachines = 0;
-    for(MachineStatus* machine: machine_status){
+    for(MachineStatus* machine: machineVec){
         MachineInfo_t info = Machine_GetInfo(machine->id);
         if(info.cpu == cpuType){
             numMachines++;
@@ -385,7 +399,7 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
     }
 
     unsigned i = 0;
-    for(MachineStatus* machine: machine_status) {
+    for(MachineStatus* machine: machineVec) {
         MachineInfo_t info = Machine_GetInfo(machine->id);
         if(info.cpu != cpuType) continue;
 
@@ -398,14 +412,14 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
         i++;
     }
 
-    // Find smallest workload in least utilized and efficienct server
-    // Migrate the workload to one of the highly utilized and efficient servers
-    // Repeat until no more to migrate
+    // Find smallest workload in least utilized and efficient server.
+    // Migrate the workload to one of the highly utilized and efficient servers.
     int currHighEfficiencyMachine = 0;
     int currLowEfficiencyMachine = low_efficiency_machines.size() - 1;
     while(currLowEfficiencyMachine >= 0) {
-        // Find the next high efficiency machine that is not full
-        while(currHighEfficiencyMachine < (int) high_efficiency_machines.size() && high_efficiency_machines[currHighEfficiencyMachine]->vms.size() == MAX_VM_PER_MACHINE) {
+        // Find the next high efficiency machine that is not full.
+        while(currHighEfficiencyMachine < (int) high_efficiency_machines.size() && 
+              high_efficiency_machines[currHighEfficiencyMachine]->vms.size() == MAX_VM_PER_MACHINE) {
             currHighEfficiencyMachine++;
         }
         if(currHighEfficiencyMachine >= (int) high_efficiency_machines.size()) {
@@ -417,7 +431,7 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
 
         // Migrate VMs from le_machine to he_machine (skip VMs that are already migrating)
         bool foundValid = false;
-        while(le_machine->vms.size() > 0 && he_machine->vms.size() < MAX_VM_PER_MACHINE) {
+        while(!le_machine->vms.empty() && he_machine->vms.size() < MAX_VM_PER_MACHINE) {
             int idx = (int)le_machine->vms.size() - 1;
             foundValid = false;
             // Search for a VM that is not in the process of migrating.
@@ -439,21 +453,21 @@ void migrateVMsToHigherEfficiencyMachines(CPUType_t cpuType){
             le_machine->vms.erase(le_machine->vms.begin() + idx);
 
             isVMMigrating[vmToMigrate] = true;
-            SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " +
-                      to_string(le_machine->id) + " to machine " + to_string(he_machine->id), 3);
+            // SimOutput("Migrating VM " + to_string(vmToMigrate) + " from machine " +
+            //           to_string(le_machine->id) + " to machine " + to_string(he_machine->id), 3);
             VM_Migrate(vmToMigrate, he_machine->id);
             he_machine->vms.push_back(vmToMigrate);
 
-            SimOutput("Low Efficiency Machine VM size: " + to_string(le_machine->vms.size()), 3);
+            // SimOutput("Low Efficiency Machine VM size: " + to_string(le_machine->vms.size()), 3);
             // Print out the VMs in the low efficiency machine
-            for(VMId_t vm: le_machine->vms){
-                SimOutput("VM in low efficiency machine: " + to_string(vm), 3);
-            }
-            SimOutput("High Efficiency Machine VM size: " + to_string(he_machine->vms.size()), 3);
-            // Print out the VMs in the high efficiency machine
-            for(VMId_t vm: he_machine->vms){
-                SimOutput("VM in high efficiency machine: " + to_string(vm), 3);
-            }
+            // for(VMId_t vm: le_machine->vms){
+            //     // SimOutput("VM in low efficiency machine: " + to_string(vm), 3);
+            // }
+            // // SimOutput("High Efficiency Machine VM size: " + to_string(he_machine->vms.size()), 3);
+            // // Print out the VMs in the high efficiency machine
+            // for(VMId_t vm: he_machine->vms){
+            //     // SimOutput("VM in high efficiency machine: " + to_string(vm), 3);
+            // }
         }
 
         low_efficiency_machines[currLowEfficiencyMachine] = le_machine;
@@ -478,7 +492,10 @@ Time_t computeVMRemainingRunTime(VMId_t vm_id){
     MachineId_t machine_id = vm_info.machine_id;
     MachineInfo_t machine_info = Machine_GetInfo(machine_id);
     unsigned machineMIPS = machine_info.performance[0];
-    // Compute reminaing run time
+    // Compute remaining run time
+    if(machineMIPS == 0){
+        return INT64_MAX;
+    }
     Time_t remainingRunTime = totalRemainingInstructions / machineMIPS;
     return remainingRunTime;
 }
@@ -502,12 +519,12 @@ bool addTaskToMachine(MachineStatus* machine, TaskId_t task_id, Priority_t prior
     // SimOutput("Machines size: " + to_string(machines.size()), 3);
     // SimOutput("VMs size: " + to_string(vms.size()), 3);
     // Look through VM list to see if task can be added to any existing VMs
-    for(unsigned i = 0;i < machine->vms.size();i++){
+    for(unsigned i = 0; i < machine->vms.size(); i++){
         if(canRunTask(machine->vms[i], task_id)){
-            SimOutput("Adding task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
+            // SimOutput("Adding task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
             assert(!isVMMigrating[machine->vms[i]]);
             VM_AddTask(machine->vms[i], task_id, priority);
-            SimOutput("Successfully added task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
+            // SimOutput("Successfully added task " + to_string(task_id) + " to VM " + to_string(machine->vms[i]) + " on machine " + to_string(machine->id) + " at " + to_string(now), 3);
             added = true;
             VMInfo_t vm_info = VM_GetInfo(machine->vms[i]);
             // vm_info.active_tasks.push_back(task_id);
@@ -527,10 +544,10 @@ bool addTaskToMachine(MachineStatus* machine, TaskId_t task_id, Priority_t prior
             VMId_t vm_new = VM_Create(task_required_vm_type, task_required_cpu);
             isVMMigrating.push_back(false);
             VM_Attach(vm_new, machine->id);
-            SimOutput("Attached VM " + to_string(vm_new) + " to machine " + to_string(machine->id) + " at " + to_string(now), 3);
-            SimOutput("Attached VM of type " + to_string(task_required_vm_type) + " to machine of type " + to_string(task_required_cpu), 3);
+            // SimOutput("Attached VM " + to_string(vm_new) + " to machine " + to_string(machine->id) + " at " + to_string(now), 3);
+            // SimOutput("Attached VM of type " + to_string(task_required_vm_type) + " to machine of type " + to_string(task_required_cpu), 3);
             VM_AddTask(vm_new, task_id, priority);
-            SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(vm_new) + " at " + to_string(now), 3);
+            // SimOutput("Added task " + to_string(task_id) + " to VM " + to_string(vm_new) + " at " + to_string(now), 3);
             machine->vms.push_back(vm_new);
             VMInfo_t vm_info = VM_GetInfo(vm_new);
             // vm_info.active_tasks.push_back(task_id);
@@ -552,9 +569,9 @@ bool addTaskToMachine(MachineStatus* machine, TaskId_t task_id, Priority_t prior
 
 // Returns true if able to schedule the new task, false otherwise;
 bool scheduleNewTask(CPUType_t task_required_cpu, VMType_t task_required_vm_type, TaskId_t task_id, Priority_t priority, Time_t now, unsigned task_required_memory){
-    // Look for a valid machine
-    for(unsigned i = 0;i < total_machines;i++) {
-        MachineStatus* machine = machine_status[i];
+    // Look for a valid machine.
+    // Originally, this loop used an index on machine_status (a vector). We now iterate over the set.
+    for(auto machine : machine_status) {
         MachineInfo_t info = Machine_GetInfo(machine->id);
         if(get_machine_s_state(machine->id) != S0) continue;
         assert(info.s_state == S0);
@@ -565,33 +582,29 @@ bool scheduleNewTask(CPUType_t task_required_cpu, VMType_t task_required_vm_type
             // SimOutput("Machine " + to_string(machine->id) + " is changing state, skipping", 3);
             continue;
         }
-        // if(info.gpus && !task_gpu_capable) continue;
-
         bool success = addTaskToMachine(machine, task_id, priority, task_required_vm_type, task_required_cpu, now);
         if(success){
             return true;
         }
-        
     }
 
-    // If no valid machine, wake one up
-    for(unsigned i = 0;i < total_machines;i++) {
-        MachineStatus* machine_to_wake = machine_status[i];
-        if(get_machine_s_state(machine_to_wake->id) != S5) continue;
-        assert(isMachineChangingState[machine_to_wake->id] || get_machine_s_state(machine_to_wake->id) == S5);
-        if(isMachineChangingState[machine_to_wake->id]) {
-            // SimOutput("Machine " + to_string(machine_to_wake->id) + " is changing state, skipping", 3);
+    // If no valid machine, wake one up.
+    for(auto machine : machine_status) {
+        // Original code checked: if(get_machine_s_state(machine_to_wake->id) != S5 || get_machine_s_state(machine_to_wake->id) != S1) continue;
+        // We preserve this check.
+        if(get_machine_s_state(machine->id) != S5 && get_machine_s_state(machine->id) != S1) continue;
+        assert(isMachineChangingState[machine->id] || get_machine_s_state(machine->id) == S5 || get_machine_s_state(machine->id) == S1);
+        if(isMachineChangingState[machine->id]) {
+            // SimOutput("Machine " + to_string(machine->id) + " is changing state, skipping", 3);
             continue;
         }
-        isMachineChangingState[machine_to_wake->id] = true;
-        SimOutput("Waking up machine " + to_string(machine_to_wake->id) + " at " + to_string(now), 3);
-        Machine_SetState(machine_to_wake->id, S0);
-        assert(running_machines.find(machine_to_wake) == running_machines.end());
-        running_machines.insert(machine_to_wake);
+        isMachineChangingState[machine->id] = true;
+        SimOutput("Waking up machine " + to_string(machine->id) + " at " + to_string(now), 3);
+        Machine_SetState(machine->id, S0);
         // num_active_machines++;
         // num_inactive_machines--;
 
-        bool success = addTaskToMachine(machine_to_wake, task_id, priority, task_required_vm_type, task_required_cpu, now);
+        bool success = addTaskToMachine(machine, task_id, priority, task_required_vm_type, task_required_cpu, now);
         if(success){
             return true;
         }
@@ -667,10 +680,10 @@ void changeMachineFrequency(MachineStatus* machine, Time_t now){
     int64_t remaining_time = earliest_deadline - now;
     if(remaining_time < 0){
         // Set to P0 if not already
-        SimOutput("Machine " + to_string(machine->id) + " is already past deadline, setting to P0", 3);
+        // SimOutput("Machine " + to_string(machine->id) + " is already past deadline, setting to P0", 3);
         MachineInfo_t machine_info = Machine_GetInfo(machine->id);
         if(machine_info.p_state != P0){
-            SimOutput("Machine " + to_string(machine->id) + " is not in P0, setting to P0", 3);
+            // SimOutput("Machine " + to_string(machine->id) + " is not in P0, setting to P0", 3);
             // isMachineChangingState[machine->id] = true;
             Machine_SetCorePerformance(machine->id, 0, P0);
         }
@@ -682,7 +695,16 @@ void changeMachineFrequency(MachineStatus* machine, Time_t now){
     int p_state_to_change_to = P3;
     while(p_state_int >= 0){
         int64_t mips = performance[p_state_int];
-        int64_t time_to_complete = total_remaining_instructions / mips;
+        int64_t time_to_complete;
+        if(mips == 0 && total_remaining_instructions == 0){
+            time_to_complete = 0;
+        }
+        else if(mips == 0){
+            continue;
+        }
+        else{
+            time_to_complete = total_remaining_instructions / mips;
+        }
         int64_t time_to_complete_with_buffer = time_to_complete * 2; // 10% buffer
         // SimOutput("Machine " + to_string(machine->id) + " remaining instructions: " + to_string(total_remaining_instructions), 3);
         // SimOutput("Machine " + to_string(machine->id) + " MIPS: " + to_string(mips), 3);
@@ -692,7 +714,7 @@ void changeMachineFrequency(MachineStatus* machine, Time_t now){
         if(time_to_complete_with_buffer < remaining_time){
             p_state_to_change_to = p_state_int;
             // Print out MIPS + remaining instructions
-            SimOutput("Machine " + to_string(machine->id) + " can complete in time with P" + to_string(p_state_int) + " at time " + to_string(now), 3);
+            // SimOutput("Machine " + to_string(machine->id) + " can complete in time with P" + to_string(p_state_int) + " at time " + to_string(now), 3);
             break;
         }
         p_state_int--;
@@ -702,12 +724,12 @@ void changeMachineFrequency(MachineStatus* machine, Time_t now){
 
     // If the machine is already in the desired state, do nothing
     if(desired_p_state == machine_info.p_state){
-        SimOutput("Machine " + to_string(machine->id) + " is already in the desired state, skipping", 3);
+        // SimOutput("Machine " + to_string(machine->id) + " is already in the desired state, skipping", 3);
         return;
     }
     else{
         // Change the machine state
-        SimOutput("Changing machine " + to_string(machine->id) + " from state " + to_string(machine_info.p_state) + " to state " + to_string(p_state_to_change_to) + " at time " + to_string(now), 3);
+        // SimOutput("Changing machine " + to_string(machine->id) + " from state " + to_string(machine_info.p_state) + " to state " + to_string(p_state_to_change_to) + " at time " + to_string(now), 3);
         // isMachineChangingState[machine->id] = true;
         Machine_SetCorePerformance(machine->id, 0, desired_p_state);
     }
