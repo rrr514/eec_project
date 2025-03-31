@@ -298,7 +298,7 @@ void Scheduler::TaskComplete(Time_t now, TaskId_t task_id) {
 			shiftMachine(machine_id, ACTIVE, STANDBY); // Move to standby
 		}
 	}
-	SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
+	// SimOutput("Scheduler::TaskComplete(): Task " + to_string(task_id) + " completed at time " + to_string(now), 0);
 }
 
 // Public interface below
@@ -359,7 +359,7 @@ void SLAWarning(Time_t time, TaskId_t task_id) {
 	// 4. Update the machine status for both the source and destination machines
 	// 5. Update the VM status if necessary
 
-	SimOutput("SLAWarning(): SLA violation detected for task " + to_string(task_id), 0);
+	// SimOutput("SLAWarning(): SLA violation detected for task " + to_string(task_id), 0);
 }
 
 void StateChangeComplete(Time_t time, MachineId_t machine_id) {
