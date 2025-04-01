@@ -459,6 +459,45 @@ bool addTaskToMachine(MachineStatus* machine, TaskId_t task_id, Priority_t prior
 
 // Returns true if able to schedule the new task, false otherwise;
 bool scheduleNewTask(CPUType_t task_required_cpu, VMType_t task_required_vm_type, TaskId_t task_id, Priority_t priority, Time_t now, unsigned task_required_memory){
+    if(IsTaskGPUCapable(task_id)){
+        // First look for a valid machine that has GPUs
+        for(auto machine : machine_status) {
+            MachineInfo_t info = Machine_GetInfo(machine->id);
+            if(!info.gpus) continue;
+            if(get_machine_s_state(machine->id) != S0) continue;
+            assert(info.s_state == S0);
+
+            if(info.cpu != task_required_cpu) continue;
+            if(info.memory_used + task_required_memory > info.memory_size) continue;
+            if(isMachineChangingState[machine->id]) {
+                continue;
+            }
+            bool success = addTaskToMachine(machine, task_id, priority, task_required_vm_type, task_required_cpu, now);
+            if(success){
+                return true;
+            }
+        }
+
+        // If no valid machine with GPU, wake one up.
+        for(auto machine : machine_status) {
+            MachineInfo_t info = Machine_GetInfo(machine->id);
+            if(!info.gpus) continue;
+            if(get_machine_s_state(machine->id) != S5 && get_machine_s_state(machine->id) != S1) continue;
+            assert(isMachineChangingState[machine->id] || get_machine_s_state(machine->id) == S5 || get_machine_s_state(machine->id) == S1);
+            if(isMachineChangingState[machine->id]) {
+                continue;
+            }
+            isMachineChangingState[machine->id] = true;
+            SimOutput("Waking up machine " + to_string(machine->id) + " at " + to_string(now), 3);
+            Machine_SetState(machine->id, S0);
+
+            bool success = addTaskToMachine(machine, task_id, priority, task_required_vm_type, task_required_cpu, now);
+            if(success){
+                return true;
+            }
+        }
+    }
+    
     // Look for a valid machine.
     for(auto machine : machine_status) {
         MachineInfo_t info = Machine_GetInfo(machine->id);
